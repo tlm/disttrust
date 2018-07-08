@@ -33,7 +33,6 @@ func (a *AppRoleAuthHandler) Auth(client *api.Client, opt map[string]string) err
 	}
 
 	client.SetToken(secret.Auth.ClientToken)
-	fmt.Println(client.Token())
 	return nil
 }
 
