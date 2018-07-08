@@ -38,7 +38,7 @@ func DefaultConfig() *api.Config {
 	return api.DefaultConfig()
 }
 
-func (p *Provider) Issue(req *provider.Request) (*provider.Response, error) {
+func (p *Provider) Issue(req *provider.Request) (provider.Lease, error) {
 	logical := p.client.Logical()
 	path := fmt.Sprintf("%s/issue/%s", p.config.Path, p.config.Role)
 
@@ -49,24 +49,14 @@ func (p *Provider) Issue(req *provider.Request) (*provider.Response, error) {
 
 	secret, err := logical.Write(path, data)
 	if err != nil {
-		return nil, errors.Wrap(err, "issuing certificate")
+		return nil, errors.Wrap(err, "issue certificate from vault")
 	}
 
-	var ok bool
-	res := provider.Response{}
-	res.Certificate, ok = secret.Data["certificate"].(string)
-	if !ok {
-		return nil, errors.New("unknown type for issued certificate")
+	lease, err := LeaseFromSecret(secret)
+	if err != nil {
+		return nil, errors.Wrap(err, "issue certificate make lease")
 	}
-	res.PrivateKey, ok = secret.Data["private_key"].(string)
-	if !ok {
-		return nil, errors.New("unknown type for issued private key")
-	}
-	res.PrivateKey, ok = secret.Data["serial_number"].(string)
-	if !ok {
-		return nil, errors.New("unknown type for issued serial")
-	}
-	return &res, nil
+	return lease, nil
 }
 
 func NewProvider(config Config, auth AuthHandler,

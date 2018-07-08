@@ -1,8 +1,6 @@
 package conductor
 
 import (
-	"fmt"
-
 	"github.com/pkg/errors"
 
 	log "github.com/sirupsen/logrus"
@@ -21,10 +19,9 @@ func (m *Member) Do() error {
 	})
 
 	log.Info("issuing certificate")
-	res, err := m.Provider.Issue(&m.Request)
+	_, err := m.Provider.Issue(&m.Request)
 	if err != nil {
 		return errors.Wrap(err, "issuing certificate")
 	}
-	fmt.Println(res.Certificate)
 	return nil
 }

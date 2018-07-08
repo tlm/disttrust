@@ -5,8 +5,7 @@ import (
 )
 
 type Lease interface {
-	End() Time
 	HasResponse() bool
-	RenewBefore() Time
 	Response() (*Response, error)
+	Till() time.Time
 }
