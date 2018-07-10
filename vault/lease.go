@@ -2,6 +2,7 @@ package vault
 
 import (
 	"crypto/x509"
+	"encoding/pem"
 	"time"
 
 	"github.com/hashicorp/vault/api"
@@ -15,16 +16,18 @@ type Lease struct {
 	leaseID   string
 	renewable bool
 	response  *provider.Response
+	start     time.Time
 	till      time.Time
 }
 
 func (l *Lease) HasResponse() bool {
-	return true
+	return l.response != nil
 }
 
 func LeaseFromSecret(secret *api.Secret) (*Lease, error) {
 	lease := Lease{}
 
+	lease.start = time.Now()
 	lease.leaseID = secret.LeaseID
 	lease.renewable = secret.Renewable
 
@@ -32,11 +35,17 @@ func LeaseFromSecret(secret *api.Secret) (*Lease, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "making lease response")
 	}
+	lease.response = res
 
 	if secret.LeaseDuration != 0 {
 		lease.till = time.Now().Add(time.Duration(secret.LeaseDuration) * time.Second)
 	} else {
-		cert, err := x509.ParseCertificate([]byte(res.Certificate))
+		block, _ := pem.Decode([]byte(res.Certificate))
+		if block == nil {
+			return nil, errors.Wrap(err, "decoding pem lease certificate")
+		}
+
+		cert, err := x509.ParseCertificate(block.Bytes)
 		if err != nil {
 			return nil, errors.Wrap(err, "making lease renew time")
 		}
@@ -66,6 +75,10 @@ func makeResponse(data map[string]interface{}) (*provider.Response, error) {
 
 func (l *Lease) Response() (*provider.Response, error) {
 	return l.response, nil
+}
+
+func (l *Lease) Start() time.Time {
+	return l.start
 }
 
 func (l *Lease) Till() time.Time {

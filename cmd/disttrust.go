@@ -15,7 +15,7 @@ import (
 )
 
 var (
-	manager = conductor.NewConductor()
+	manager *conductor.Conductor
 )
 
 func buildProviders(cnfProviders []config.Provider) error {
@@ -40,6 +40,10 @@ func buildProviders(cnfProviders []config.Provider) error {
 		}
 	}
 	return nil
+}
+
+func init() {
+	manager = conductor.NewConductor()
 }
 
 func main() {
@@ -85,10 +89,12 @@ func startAnchors(anchors []config.Anchor) error {
 		req.CommonName = cnfAnchor.CommonName
 		req.AltNames = cnfAnchor.AltNames
 
-		member := conductor.Member{}
-		member.Provider = prv
-		member.Request = req
+		_, err = config.MakeDest(cnfAnchor.Dest, cnfAnchor.DestOptions)
+		if err != nil {
+			return errors.Wrap(err, "make dest for anchor")
+		}
 
+		member := conductor.NewMember(prv, req)
 		manager.AddMember(member)
 	}
 	return nil

@@ -7,9 +7,11 @@ import (
 )
 
 type Anchor struct {
-	Provider   string   `json:"provider"`
-	CommonName string   `json:"cn"`
-	AltNames   []string `json:"altNames"`
+	AltNames    []string        `json:"altNames"`
+	CommonName  string          `json:"cn"`
+	Dest        string          `json:"dest"`
+	DestOptions json.RawMessage `json:"destOpts"`
+	Provider    string          `json:"provider"`
 }
 
 type Config struct {

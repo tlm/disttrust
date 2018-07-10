@@ -1,19 +1,24 @@
 package conductor
 
 type Conductor struct {
-	members []Member
+	members []*Member
 }
 
 func NewConductor() *Conductor {
 	return &Conductor{}
 }
 
-func (c *Conductor) AddMember(mem Member) {
+func (c *Conductor) AddMember(mem *Member) {
 	c.members = append(c.members, mem)
 }
 
 func (c *Conductor) Conduct() {
 	for _, member := range c.members {
-		member.Do()
+		go member.Play()
+
+		select {
+		case <-member.DoneCh():
+			return
+		}
 	}
 }
