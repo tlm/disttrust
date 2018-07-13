@@ -3,6 +3,12 @@
 
 [[projects]]
   branch = "master"
+  name = "github.com/carlescere/goback"
+  packages = ["."]
+  revision = "ebe10501f4c4682dd56f50a33dac8cb44f025109"
+
+[[projects]]
+  branch = "master"
   name = "github.com/golang/snappy"
   packages = ["."]
   revision = "2e65f85255dbc3072edf28d6b5b8efc472979f5a"
@@ -159,6 +165,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "4c6230c6be7a36edc98b421036af84a3220d16b6def562e9405e10bf83dbc572"
+  inputs-digest = "e651c2e9bcaf1f78f7f5994a8280e0a14c1d08633161c722d105d78d0dc5b699"
   solver-name = "gps-cdcl"
   solver-version = 1
