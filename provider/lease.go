@@ -5,6 +5,7 @@ import (
 )
 
 type Lease interface {
+	ID() string
 	HasResponse() bool
 	Response() (*Response, error)
 	Start() time.Time

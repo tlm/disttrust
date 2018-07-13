@@ -6,7 +6,12 @@ import (
 	"github.com/pkg/errors"
 )
 
+type Action struct {
+	Command []string `json:"command"`
+}
+
 type Anchor struct {
+	Action      Action          `json:"action"`
 	AltNames    []string        `json:"altNames"`
 	CommonName  string          `json:"cn"`
 	Dest        string          `json:"dest"`

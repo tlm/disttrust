@@ -19,8 +19,8 @@ func MakeDest(id string, opts json.RawMessage) (dest.Dest, error) {
 		return nil, errors.Wrap(err, "parsing dest json")
 	}
 	fdest := dest.File{}
-	if cfile, exists := uopts["certFile"]; exists {
-		fdest.CertFile = cfile
+	if cfile, exists := uopts["certificateFile"]; exists {
+		fdest.CertificateFile = cfile
 	}
 	if pkfile, exists := uopts["privateKeyFile"]; exists {
 		fdest.PrivateKeyFile = pkfile

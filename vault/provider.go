@@ -80,3 +80,7 @@ func NewProvider(config Config, auth AuthHandler,
 		config: config,
 	}, nil
 }
+
+func Renew(lease provider.Lease) (Lease, error) {
+	return nil, errors.New("not  implemented")
+}

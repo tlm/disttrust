@@ -9,6 +9,7 @@ import (
 
 type testLease func() time.Time
 
+func (t testLease) ID() string                            { return "testlease" }
 func (t testLease) HasResponse() bool                     { return false }
 func (t testLease) Response() (*provider.Response, error) { return nil, nil }
 func (t testLease) Start() time.Time                      { return time.Now() }

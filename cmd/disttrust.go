@@ -75,7 +75,7 @@ func main() {
 		}
 	}
 
-	manager.Conduct()
+	manager.Watch()
 }
 
 func startAnchors(anchors []config.Anchor) error {
@@ -89,12 +89,17 @@ func startAnchors(anchors []config.Anchor) error {
 		req.CommonName = cnfAnchor.CommonName
 		req.AltNames = cnfAnchor.AltNames
 
-		_, err = config.MakeDest(cnfAnchor.Dest, cnfAnchor.DestOptions)
+		dest, err := config.MakeDest(cnfAnchor.Dest, cnfAnchor.DestOptions)
 		if err != nil {
 			return errors.Wrap(err, "make dest for anchor")
 		}
+		action, err := config.MakeAction(cnfAnchor.Action)
+		if err != nil {
+			return errors.Wrap(err, "make action for anchor")
+		}
 
-		member := conductor.NewMember(prv, req)
+		memHandle := conductor.DefaultLeaseHandle(dest, action)
+		member := conductor.NewMember(prv, req, memHandle)
 		manager.AddMember(member)
 	}
 	return nil

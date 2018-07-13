@@ -24,12 +24,20 @@ func (l *Lease) HasResponse() bool {
 	return l.response != nil
 }
 
+func (l *Lease) ID() string {
+	return l.leaseID
+}
+
 func LeaseFromSecret(secret *api.Secret) (*Lease, error) {
 	lease := Lease{}
 
 	lease.start = time.Now()
-	lease.leaseID = secret.LeaseID
 	lease.renewable = secret.Renewable
+	if lease.renewable {
+		lease.leaseID = secret.LeaseID
+	} else {
+		lease.leaseID = secret.RequestID
+	}
 
 	res, err := makeResponse(secret.Data)
 	if err != nil {
