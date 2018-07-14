@@ -15,6 +15,7 @@ import (
 type Lease struct {
 	leaseID   string
 	renewable bool
+	request   *provider.Request
 	response  *provider.Response
 	start     time.Time
 	till      time.Time
@@ -28,7 +29,7 @@ func (l *Lease) ID() string {
 	return l.leaseID
 }
 
-func LeaseFromSecret(secret *api.Secret) (*Lease, error) {
+func LeaseFromSecret(req *provider.Request, secret *api.Secret) (*Lease, error) {
 	lease := Lease{}
 
 	lease.start = time.Now()
@@ -74,11 +75,15 @@ func makeResponse(data map[string]interface{}) (*provider.Response, error) {
 	if !ok {
 		return nil, errors.New("unknown type for issued private key")
 	}
-	res.PrivateKey, ok = data["serial_number"].(string)
+	res.Serial, ok = data["serial_number"].(string)
 	if !ok {
 		return nil, errors.New("unknown type for issued serial")
 	}
 	return &res, nil
+}
+
+func (l *Lease) Request() *provider.Request {
+	return l.request
 }
 
 func (l *Lease) Response() (*provider.Response, error) {
