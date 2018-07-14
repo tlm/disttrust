@@ -5,6 +5,8 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/tlmiller/disttrust/dest"
 	logu "github.com/tlmiller/disttrust/log"
 	"github.com/tlmiller/disttrust/provider"
@@ -30,6 +32,11 @@ func ResponseHandle(dest dest.Dest, next LeaseHandler) LeaseHandler {
 		if err != nil {
 			return errors.Wrap(err, "getting lease response for dest")
 		}
+
+		log = log.WithFields(logrus.Fields{
+			"serial": res.Serial,
+		})
+		ctx = logu.WithLogger(ctx, log)
 		log.Info("sending new lease response to dest")
 		err = dest.Send(res)
 		if err != nil {
