@@ -1,4 +1,4 @@
-package main
+package cmd
 
 import (
 	"flag"
@@ -46,7 +46,7 @@ func init() {
 	manager = conductor.NewConductor()
 }
 
-func main() {
+func Run() int {
 	flag.Parse()
 	if len(cmdflag.ConfigFiles) == 0 {
 		log.Fatal("no config files provided")
@@ -76,6 +76,7 @@ func main() {
 	}
 
 	manager.Watch()
+	return 0
 }
 
 func startAnchors(anchors []config.Anchor) error {
