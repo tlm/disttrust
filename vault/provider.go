@@ -52,7 +52,7 @@ func (p *Provider) Issue(req *provider.Request) (provider.Lease, error) {
 		return nil, errors.Wrap(err, "issue certificate from vault")
 	}
 
-	lease, err := LeaseFromSecret(secret)
+	lease, err := LeaseFromSecret(req, secret)
 	if err != nil {
 		return nil, errors.Wrap(err, "issue certificate make lease")
 	}
@@ -81,6 +81,16 @@ func NewProvider(config Config, auth AuthHandler,
 	}, nil
 }
 
-func Renew(lease provider.Lease) (Lease, error) {
-	return nil, errors.New("not  implemented")
+func (p *Provider) Renew(lease provider.Lease) (provider.Lease, error) {
+	var vlease *Lease
+	var ok bool
+	if vlease, ok = lease.(*Lease); !ok {
+		return nil, fmt.Errorf("unsupported lease type")
+	}
+	if vlease.renewable {
+		// TODO implement
+		return nil, fmt.Errorf("currently do not support renewable leases")
+	}
+
+	return p.Issue(vlease.Request())
 }
