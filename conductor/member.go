@@ -83,7 +83,7 @@ func (m *DefaultMember) Play() {
 		select {
 		case <-r.RenewCh():
 			plog.Info("renewing lease")
-			lease, err = m.renewLease(lease)
+			lease, err = m.provider.Renew(lease)
 			if err != nil {
 				m.doneCh <- errors.Wrap(err, "renewing lease")
 				return
@@ -108,10 +108,6 @@ func (m *DefaultMember) Play() {
 			return
 		}
 	}
-}
-
-func (m *DefaultMember) renewLease(lease provider.Lease) (provider.Lease, error) {
-	return nil, nil
 }
 
 func (m *DefaultMember) Stop() {

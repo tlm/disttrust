@@ -32,10 +32,12 @@ func (l *Lease) ID() string {
 }
 
 func LeaseFromSecret(req *provider.Request, secret *api.Secret) (*Lease, error) {
-	lease := Lease{}
+	lease := Lease{
+		renewable: secret.Renewable,
+		request:   req,
+		start:     time.Now(),
+	}
 
-	lease.start = time.Now()
-	lease.renewable = secret.Renewable
 	if lease.renewable {
 		lease.leaseID = secret.LeaseID
 	} else {
@@ -105,6 +107,9 @@ func (l *Lease) Request() *provider.Request {
 }
 
 func (l *Lease) Response() (*provider.Response, error) {
+	if l.response == nil {
+		return nil, errors.New("no lease response")
+	}
 	return l.response, nil
 }
 
