@@ -3,6 +3,8 @@ package vault
 import (
 	"crypto/x509"
 	"encoding/pem"
+	"fmt"
+	"strings"
 	"time"
 
 	"github.com/hashicorp/vault/api"
@@ -64,12 +66,28 @@ func LeaseFromSecret(req *provider.Request, secret *api.Secret) (*Lease, error) 
 	return &lease, nil
 }
 
+func convertRawCABundle(bundle []interface{}) string {
+	caBundle := make([]string, len(bundle))
+	for index, val := range bundle {
+		caBundle[index] = fmt.Sprintf("%v", val)
+	}
+	return strings.Join(caBundle, "\n")
+}
+
 func makeResponse(data map[string]interface{}) (*provider.Response, error) {
 	res := provider.Response{}
 	var ok bool
+	caBundleRaw, ok := data["ca_chain"].([]interface{})
+	if ok {
+		res.CABundle = convertRawCABundle(caBundleRaw)
+	}
 	res.Certificate, ok = data["certificate"].(string)
 	if !ok {
 		return nil, errors.New("unknown type for issued certificate")
+	}
+	res.CA, ok = data["issuing_ca"].(string)
+	if !ok {
+		return nil, errors.New("unknown type for issuing ca")
 	}
 	res.PrivateKey, ok = data["private_key"].(string)
 	if !ok {
