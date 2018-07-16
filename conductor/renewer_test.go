@@ -55,15 +55,18 @@ func TestRenewWithinThreshold(t *testing.T) {
 	go r.Renew()
 
 	renewChCall := false
-	select {
-	case <-r.RenewCh():
-		renewChCall = true
-	case err := <-r.DoneCh():
-		if err != nil {
-			t.Fatalf("go unexpected error from done channel: %v", err)
-		}
-		if renewChCall == false {
-			t.Fatal("done channel called before renew channel")
+	for {
+		select {
+		case <-r.RenewCh():
+			renewChCall = true
+		case err := <-r.DoneCh():
+			if err != nil {
+				t.Fatalf("go unexpected error from done channel: %v", err)
+			}
+			if renewChCall == false {
+				t.Fatal("done channel called before renew channel")
+			}
+			return
 		}
 	}
 }

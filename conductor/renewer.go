@@ -66,6 +66,7 @@ func (r *Renewer) Renew() {
 	}
 	if left <= RenewThreshold {
 		r.renewCh <- struct{}{}
+		r.doneCh <- nil
 		return
 	}
 
