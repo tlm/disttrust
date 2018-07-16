@@ -15,7 +15,7 @@ func TestAuthMissingOpt(t *testing.T) {
 	for _, test := range tests {
 		_, err := NewAppRoleAuthHandler(test.Opts)
 		if err == nil {
-			t.Fatal("should have recieved error for missing opts")
+			t.Fatal("should have received error for missing opts")
 		}
 	}
 }

@@ -37,7 +37,7 @@ func (p *Provider) authRenewal(secret *api.Secret) {
 
 	// At this stage we have setup a vault renewer that will keep renewing the
 	// auth token for as long as possible. If the renewer tells us its done then
-	// that means an error has occured with renewal at which point this is
+	// that means an error has occurred with renewal at which point this is
 	// considered a failure or a new token needs to be generated. If a new token
 	// generation also fails then nothing more we can do.
 	for {

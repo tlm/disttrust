@@ -27,7 +27,7 @@ func TestResponseHandleCtxDone(t *testing.T) {
 	cancel()
 	err := ResponseHandle(&testDest{}, next).Handle(ctx, &provider.DummyLease{})
 	if err != nil {
-		t.Fatalf("recieved unexpected error: %v", err)
+		t.Fatalf("received unexpected error: %v", err)
 	}
 	if passed {
 		t.Fatalf("lease passed through to next when context done")
@@ -48,7 +48,7 @@ func TestResponseHandleNext(t *testing.T) {
 		})
 
 	if err != nil {
-		t.Fatalf("recieved unexpected error: %v", err)
+		t.Fatalf("received unexpected error: %v", err)
 	}
 	if !dest.called {
 		t.Fatalf("dest was not called by response handler")

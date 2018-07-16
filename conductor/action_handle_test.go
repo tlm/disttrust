@@ -35,13 +35,13 @@ func TestActionHandleWithCanceledContext(t *testing.T) {
 	cancel()
 	err := ActionHandle(&action, next).Handle(ctx, &provider.DummyLease{})
 	if err != nil {
-		t.Fatalf("recieved unexpected error for no lease response: %v", err)
+		t.Fatalf("received unexpected error for no lease response: %v", err)
 	}
 	if nextHas {
 		t.Fatalf("action handle called next when canceled context")
 	}
 	if action.Fired {
-		t.Fatalf("expection action to not be fired for canceled context")
+		t.Fatalf("exception action to not be fired for canceled context")
 	}
 }
 
@@ -58,7 +58,7 @@ func TestActionHandleWithNoResponse(t *testing.T) {
 
 	err := ActionHandle(&action, next).Handle(context.Background(), &provider.DummyLease{})
 	if err != nil {
-		t.Fatalf("recieved unexpected error for no lease response: %v", err)
+		t.Fatalf("received unexpected error for no lease response: %v", err)
 	}
 	if !nextHas {
 		t.Fatalf("action handle did not pass through to next")
@@ -82,7 +82,7 @@ func TestActionHandleFireForResponse(t *testing.T) {
 	err := ActionHandle(&action, next).Handle(context.Background(),
 		&provider.DummyLease{ResponseVal: &provider.Response{}})
 	if err != nil {
-		t.Fatalf("recieved unexpected error for no lease response: %v", err)
+		t.Fatalf("received unexpected error for no lease response: %v", err)
 	}
 	if !nextHas {
 		t.Fatalf("action handle did not pass through to next")
@@ -116,7 +116,7 @@ func TestActionHandleFireErrForDeadline(t *testing.T) {
 	err := ActionHandle(&action, next).Handle(context.Background(),
 		&provider.DummyLease{ResponseVal: &provider.Response{}})
 	if err == nil {
-		t.Fatalf("recieved no error for context deadline: %v", err)
+		t.Fatalf("received no error for context deadline: %v", err)
 	}
 	if !action.Fired {
 		t.Fatalf("action fire was not called")

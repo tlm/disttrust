@@ -79,7 +79,7 @@ func TestRenewWithStop(t *testing.T) {
 
 	select {
 	case <-r.RenewCh():
-		t.Fatal("recieved renew channel call when not expected")
+		t.Fatal("received renew channel call when not expected")
 	case err := <-r.DoneCh():
 		if err != nil {
 			t.Fatalf("go unexpected error from done channel: %v", err)

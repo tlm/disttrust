@@ -26,7 +26,7 @@ func TestRegisterDuplicate(t *testing.T) {
 
 	err := RegisterProvider(id, mapper)
 	if err != nil {
-		t.Errorf("recieved error for first register: %v", err)
+		t.Errorf("received error for first register: %v", err)
 	}
 
 	err = RegisterProvider(id, mapper)
