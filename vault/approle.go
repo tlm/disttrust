@@ -9,33 +9,43 @@ import (
 )
 
 type AppRoleAuthHandler struct {
+	roleId   string
+	secretId string
 }
 
-func (a *AppRoleAuthHandler) Auth(client *api.Client, opt map[string]string) error {
-	roleId, exists := opt["roleId"]
-	if !exists {
-		return fmt.Errorf("roleId not provided for approle auth handler")
-	}
-	secretId, exists := opt["secretId"]
-	if !exists {
-		return fmt.Errorf("secretId not provided for approle auth handler")
-	}
-
+func (a *AppRoleAuthHandler) Auth(client *api.Client) (*api.Secret, error) {
 	data := map[string]interface{}{
-		"role_id":   roleId,
-		"secret_id": secretId,
+		"role_id":   a.roleId,
+		"secret_id": a.secretId,
 	}
 
 	path := "auth/approle/login/"
 	secret, err := client.Logical().Write(path, data)
 	if err != nil {
-		return errors.Wrap(err, "loging in with approle")
+		return nil, errors.Wrap(err, "loging in with approle")
 	}
 
-	client.SetToken(secret.Auth.ClientToken)
-	return nil
+	return secret, nil
+}
+
+func NewAppRoleAuthHandler(opts map[string]string) (*AppRoleAuthHandler, error) {
+	roleId, exists := opts["roleId"]
+	if !exists {
+		return nil, fmt.Errorf("roleId not provided for approle auth handler")
+	}
+	secretId, exists := opts["secretId"]
+	if !exists {
+		return nil, fmt.Errorf("secretId not provided for approle auth handler")
+	}
+	return &AppRoleAuthHandler{
+		roleId:   roleId,
+		secretId: secretId,
+	}, nil
 }
 
 func init() {
-	AuthHandlers["approle"] = &AppRoleAuthHandler{}
+	AuthHandlers["approle"] =
+		MakeAuthHandler(func(opts map[string]string) (AuthHandler, error) {
+			return NewAppRoleAuthHandler(opts)
+		})
 }

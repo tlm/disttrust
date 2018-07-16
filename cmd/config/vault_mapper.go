@@ -32,9 +32,13 @@ func vaultMapper(opt json.RawMessage) (provider.Provider, error) {
 		return nil, errors.Wrap(err, "parsing vault provider config")
 	}
 
-	auth, exists := vault.AuthHandlers[config.AuthMethod]
+	authMaker, exists := vault.AuthHandlers[config.AuthMethod]
 	if !exists {
 		return nil, fmt.Errorf("no auth handler for method '%s'", config.AuthMethod)
+	}
+	auth, err := authMaker(config.AuthOpts)
+	if err != nil {
+		return nil, errors.Wrap(err, "making auth handler")
 	}
 
 	pconfig := vault.Config{}
@@ -49,7 +53,7 @@ func vaultMapper(opt json.RawMessage) (provider.Provider, error) {
 	}
 	pconfig.Role = config.Role
 
-	provider, err := vault.NewProvider(pconfig, auth, config.AuthOpts)
+	provider, err := vault.NewProvider(pconfig, auth)
 	if err != nil {
 		return nil, errors.Wrap(err, "building vault provider from config")
 	}

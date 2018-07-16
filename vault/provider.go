@@ -11,10 +11,6 @@ import (
 	"github.com/tlmiller/disttrust/provider"
 )
 
-type AuthHandler interface {
-	Auth(*api.Client, map[string]string) error
-}
-
 type Config struct {
 	Address string
 	Path    string
@@ -22,23 +18,58 @@ type Config struct {
 }
 
 type Provider struct {
-	client *api.Client
-	config Config
+	auth       AuthHandler
+	authDoneCh chan error
+	client     *api.Client
+	config     Config
 }
 
 const (
 	ProviderId = "vault"
 )
 
-var (
-	AuthHandlers = make(map[string]AuthHandler)
-)
+func (p *Provider) authRenewal(secret *api.Secret) {
+	renewer, _ := p.client.NewRenewer(&api.RenewerInput{
+		Secret: secret,
+	})
+	go renewer.Renew()
+	defer renewer.Stop()
 
-func DefaultConfig() *api.Config {
-	return api.DefaultConfig()
+	// At this stage we have setup a vault renewer that will keep renewing the
+	// auth token for as long as possible. If the renewer tells us its done then
+	// that means an error has occured with renewal at which point this is
+	// considered a failure or a new token needs to be generated. If a new token
+	// generation also fails then nothing more we can do.
+	for {
+		select {
+		case err := <-renewer.DoneCh():
+			if err != nil {
+				p.authDoneCh <- errors.Wrap(err, "auth renewal")
+				break
+			}
+			secret, err := p.auth.Auth(p.client)
+			if err != nil {
+				p.authDoneCh <- errors.Wrap(err, "making new auth token in auth renewal")
+				break
+			}
+			p.client.SetToken(secret.Auth.ClientToken)
+			go p.authRenewal(secret)
+			break
+		case renewal := <-renewer.RenewCh():
+			p.client.SetToken(renewal.Secret.Auth.ClientToken)
+		}
+	}
 }
 
 func (p *Provider) Issue(req *provider.Request) (provider.Lease, error) {
+	select {
+	case err := <-p.authDoneCh:
+		if err != nil {
+			return nil, err
+		}
+	default:
+	}
+
 	logical := p.client.Logical()
 	path := fmt.Sprintf("%s/issue/%s", p.config.Path, p.config.Role)
 
@@ -59,8 +90,7 @@ func (p *Provider) Issue(req *provider.Request) (provider.Lease, error) {
 	return lease, nil
 }
 
-func NewProvider(config Config, auth AuthHandler,
-	authOpt map[string]string) (*Provider, error) {
+func NewProvider(config Config, auth AuthHandler) (*Provider, error) {
 
 	vconfig := api.DefaultConfig()
 	vconfig.Address = config.Address
@@ -70,18 +100,32 @@ func NewProvider(config Config, auth AuthHandler,
 		return nil, errors.Wrap(err, "vault provider creation")
 	}
 
-	err = auth.Auth(client, authOpt)
+	nprv := Provider{
+		auth:       auth,
+		authDoneCh: make(chan error),
+		client:     client,
+		config:     config,
+	}
+
+	tknSecret, err := nprv.auth.Auth(client)
 	if err != nil {
 		return nil, errors.Wrap(err, "new vault provider auth")
 	}
+	nprv.client.SetToken(tknSecret.Auth.ClientToken)
+	go nprv.authRenewal(tknSecret)
 
-	return &Provider{
-		client: client,
-		config: config,
-	}, nil
+	return &nprv, nil
 }
 
 func (p *Provider) Renew(lease provider.Lease) (provider.Lease, error) {
+	select {
+	case err := <-p.authDoneCh:
+		if err != nil {
+			return nil, err
+		}
+	default:
+	}
+
 	var vlease *Lease
 	var ok bool
 	if vlease, ok = lease.(*Lease); !ok {
