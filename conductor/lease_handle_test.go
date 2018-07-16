@@ -17,7 +17,7 @@ func TestNewLeaseHandlePass(t *testing.T) {
 
 	err := NewLeaseHandle(next).Handle(context.Background(), &provider.DummyLease{})
 	if err != nil {
-		t.Fatalf("recieved unexpected error: %v", err)
+		t.Fatalf("received unexpected error: %v", err)
 	}
 	if !passed {
 		t.Fatal("new lease handle did not pass through to next")
@@ -35,7 +35,7 @@ func TestNewLeaseContextDone(t *testing.T) {
 	cancel()
 	err := NewLeaseHandle(next).Handle(ctx, &provider.DummyLease{})
 	if err != nil {
-		t.Fatalf("recieved unexpected error: %v", err)
+		t.Fatalf("received unexpected error: %v", err)
 	}
 	if passed {
 		t.Fatal("new lease handle passed through to next when context done")
