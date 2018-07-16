@@ -9,7 +9,7 @@ import (
 	"github.com/tlmiller/disttrust/provider"
 )
 
-// Type used for handling then when of a provider lease. Does not do any renewal
+// Renewer used for handling the when of a provider lease. Does not do any renewal
 // of lease but instead act as the signaller for when a lease should be renewed.
 // Inspired by https://github.com/hashicorp/vault/blob/master/api/renewer.go#L47
 type Renewer struct {
@@ -23,8 +23,8 @@ type Renewer struct {
 
 var (
 	ErrLeaseLapsed = errors.New("lease has already lapsed")
-	// The threshold of time we don't even bother about waiting for. Anything
-	// below this mark will trigger straight away.
+	// RenewThreshold the threshold of time we don't even bother about waiting
+	// for. Anything below this mark will trigger straight away.
 	RenewThreshold = 10 * time.Second
 )
 
