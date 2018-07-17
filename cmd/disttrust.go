@@ -22,10 +22,11 @@ var (
 )
 
 var disttrustCmd = &cobra.Command{
-	Use:   "disttrust",
-	Short: "disttrust is a daemon that maintains local TLS certs",
-	Long:  `disttrust is a daemon that maintains local TLS certs on the system through one or more providers`,
-	Run:   Run,
+	Use:              "disttrust",
+	Short:            "disttrust is a daemon that maintains local TLS certs",
+	Long:             `disttrust is a daemon that maintains local TLS certs on the system through one or more providers`,
+	PersistentPreRun: preRun,
+	Run:              Run,
 }
 
 func buildProviders(cnfProviders []config.Provider) error {
@@ -64,6 +65,10 @@ func init() {
 	disttrustCmd.Flags().StringSliceVarP(&configFiles, "config", "c",
 		[]string{}, "Config file(s)")
 	disttrustCmd.MarkFlagRequired("config")
+}
+
+func preRun(cmd *cobra.Command, args []string) {
+	setupLogging()
 }
 
 func Run(cmd *cobra.Command, args []string) {
