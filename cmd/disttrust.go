@@ -1,22 +1,32 @@
 package cmd
 
 import (
-	"flag"
+	"fmt"
 	"io/ioutil"
+	"os"
 
 	"github.com/pkg/errors"
 
 	log "github.com/sirupsen/logrus"
 
+	"github.com/spf13/cobra"
+
 	"github.com/tlmiller/disttrust/cmd/config"
-	cmdflag "github.com/tlmiller/disttrust/cmd/flag"
 	"github.com/tlmiller/disttrust/conductor"
 	"github.com/tlmiller/disttrust/provider"
 )
 
 var (
-	manager *conductor.Conductor
+	configFiles []string
+	manager     *conductor.Conductor
 )
+
+var disttrustCmd = &cobra.Command{
+	Use:   "disttrust",
+	Short: "disttrust is a daemon that maintains local TLS certs",
+	Long:  `disttrust is a daemon that maintains local TLS certs on the system through one or more providers`,
+	Run:   Run,
+}
 
 func buildProviders(cnfProviders []config.Provider) error {
 	for _, cnfProvider := range cnfProviders {
@@ -42,17 +52,22 @@ func buildProviders(cnfProviders []config.Provider) error {
 	return nil
 }
 
-func init() {
-	manager = conductor.NewConductor()
+func Execute() {
+	if err := disttrustCmd.Execute(); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
 }
 
-func Run() int {
-	flag.Parse()
-	if len(cmdflag.ConfigFiles) == 0 {
-		log.Fatal("no config files provided")
-	}
+func init() {
+	manager = conductor.NewConductor()
+	disttrustCmd.Flags().StringSliceVarP(&configFiles, "config", "c",
+		[]string{}, "Config file(s)")
+	disttrustCmd.MarkFlagRequired("config")
+}
 
-	for _, cFile := range cmdflag.ConfigFiles {
+func Run(cmd *cobra.Command, args []string) {
+	for _, cFile := range configFiles {
 		log.Debugf("parsing config file %s", cFile)
 		raw, err := ioutil.ReadFile(cFile)
 		if err != nil {
@@ -76,7 +91,6 @@ func Run() int {
 	}
 
 	manager.Watch()
-	return 0
 }
 
 func startAnchors(anchors []config.Anchor) error {
