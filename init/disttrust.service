@@ -1,0 +1,12 @@
+[Unit]
+After=network.target
+Description=disttrust tls manager
+Documentation=https://github.com/tlmiller/disttrust
+
+[Service]
+Type=simple
+ExecStart=/opt/disttrust/bin/disttrust --log-json -c %i
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
