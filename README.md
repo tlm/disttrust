@@ -90,7 +90,7 @@ Defines the authMethod to use for vault. Supported values are:
 Defines an object map of properties for the auth method. Below value are
 supported based on auth method.
 
-* approle
+* approle:
 
     `roleId` - required - the approle role-id to use
     
@@ -123,7 +123,7 @@ issue on the local system from defined providers.
         "certBundleFile": "./out/test-bundle.pem",
         "privKeyFile": "./out/test-key.pem"
 	},
-    "action": {
+	"action": {
         "command": [
 			"/opt/local/bin/bash",
 			"-c",
@@ -148,15 +148,26 @@ List of alternative names to use in the issued certificate
 `dest` - required
 
 The destination location for issues certificates. Currently supported values are:
+
 * `file`
 
 `destOpts` - required
 
 dest specific options. Options specific to the dest type choosen.
 
-* `file`
+* `file`:
 
     `caFile` - optional - location to output ca to
+    
     `certFile` - optional - location to output issued certificate to
+    
     `certBundleFile` - optional location to output issued certificate bundle to
+    
     `privKeyFile` - optional location to output private key to
+
+`action` - required
+
+Map describing the actions to take when certificates are issues/updated. Supported values are:
+
+* `command` - required - List of command with arguments to execute
+
