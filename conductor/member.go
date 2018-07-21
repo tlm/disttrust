@@ -22,7 +22,7 @@ type DefaultMember struct {
 	context  context.Context
 	cancel   func()
 	doneCh   chan error
-	handle   LeaseHandler
+	handler  LeaseHandler
 	provider provider.Provider
 	request  provider.Request
 }
@@ -31,10 +31,10 @@ func (m *DefaultMember) DoneCh() <-chan error {
 	return m.doneCh
 }
 
-func NewMember(provider provider.Provider, request provider.Request, handle LeaseHandler) Member {
+func NewMember(provider provider.Provider, request provider.Request, handler LeaseHandler) Member {
 	mem := &DefaultMember{
 		doneCh:   make(chan error),
-		handle:   handle,
+		handler:  handler,
 		provider: provider,
 		request:  request,
 	}
@@ -65,7 +65,7 @@ func (m *DefaultMember) Play() {
 		"lease_id":  lease.ID(),
 		"lease_end": lease.Till().Format(time.RFC3339),
 	})
-	err = m.handle.Handle(logu.WithLogger(m.context, plog), lease)
+	err = m.handler.Handle(logu.WithLogger(m.context, plog), lease)
 	if err != nil {
 		m.doneCh <- errors.Wrap(err, "handling new lease")
 		return
@@ -89,7 +89,7 @@ func (m *DefaultMember) Play() {
 				return
 			}
 			plog.Info("acquired new lease")
-			err = m.handle.Handle(logu.WithLogger(m.context, plog), lease)
+			err = m.handler.Handle(logu.WithLogger(m.context, plog), lease)
 			if err != nil {
 				m.doneCh <- errors.Wrap(err, "handling renewed lease")
 				return
