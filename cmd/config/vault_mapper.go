@@ -19,7 +19,7 @@ type vaultConfig struct {
 }
 
 func init() {
-	err := RegisterProvider(vault.ProviderId, ProviderMapper(vaultMapper))
+	err := MapProvider(vault.ProviderId, ProviderMapper(vaultMapper))
 	if err != nil {
 		panic(err)
 	}

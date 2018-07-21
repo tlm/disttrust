@@ -4,6 +4,10 @@ import (
 	"github.com/tlmiller/disttrust/action"
 )
 
-func MakeAction(caction Action) (action.Action, error) {
+type Action struct {
+	Command []string `json:"command"`
+}
+
+func ToAction(caction Action) (action.Action, error) {
 	return action.CommandFromSlice(caction.Command)
 }

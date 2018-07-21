@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 
 	"github.com/pkg/errors"
@@ -29,23 +28,18 @@ var disttrustCmd = &cobra.Command{
 	Run:              Run,
 }
 
-func buildProviders(cnfProviders []config.Provider) error {
+func applyProviders(cnfProviders []config.Provider, store *provider.Store) error {
 	for _, cnfProvider := range cnfProviders {
 		if len(cnfProvider.Name) == 0 {
 			return errors.New("undefined provider name")
 		}
-		log.Debugf("building provider %s", cnfProvider.Name)
 
-		p, err := config.MakeProvider(cnfProvider.Id, cnfProvider.Options)
+		p, err := config.ToProvider(cnfProvider.Id, cnfProvider.Options)
 		if err != nil {
-			return errors.Wrapf(err, "building provider %s", cnfProvider.Name)
+			return errors.Wrapf(err, "config to provider%s", cnfProvider.Name)
 		}
 
-		log.WithFields(log.Fields{
-			"providerName": cnfProvider.Name,
-			"providerId":   cnfProvider.Id,
-		}).Info("registering provider")
-		err = provider.Store(cnfProvider.Name, p)
+		err = store.Store(cnfProvider.Name, p)
 		if err != nil {
 			return errors.Wrap(err, "registering provider")
 		}
@@ -72,35 +66,27 @@ func preRun(cmd *cobra.Command, args []string) {
 }
 
 func Run(cmd *cobra.Command, args []string) {
-	for _, cFile := range configFiles {
-		log.Debugf("parsing config file %s", cFile)
-		raw, err := ioutil.ReadFile(cFile)
-		if err != nil {
-			log.Fatalf("reading config file: %v", err)
-		}
+	config, err := config.FromFiles(configFiles...)
+	if err != nil {
+		log.Fatalf("making config: %v", err)
+	}
 
-		cnf, err := config.New(raw)
-		if err != nil {
-			log.Fatalf("parsing config file: %v", err)
-		}
+	err = applyProviders(config.Providers, provider.DefaultStore())
+	if err != nil {
+		log.Fatalf("applying providers: %v", err)
+	}
 
-		err = buildProviders(cnf.Providers)
-		if err != nil {
-			log.Fatalf("building providers from config file %s: %v", cFile, err)
-		}
-
-		err = startAnchors(cnf.Anchors)
-		if err != nil {
-			log.Fatalf("starting anchors from config file %s: %v", cFile, err)
-		}
+	err = startAnchors(config.Anchors, provider.DefaultStore())
+	if err != nil {
+		log.Fatalf("starting anchors: %v", err)
 	}
 
 	manager.Watch()
 }
 
-func startAnchors(anchors []config.Anchor) error {
+func startAnchors(anchors []config.Anchor, store *provider.Store) error {
 	for _, cnfAnchor := range anchors {
-		prv, err := provider.Fetch(cnfAnchor.Provider)
+		prv, err := store.Fetch(cnfAnchor.Provider)
 		if err != nil {
 			return errors.Wrap(err, "getting anchor provider")
 		}
@@ -109,11 +95,11 @@ func startAnchors(anchors []config.Anchor) error {
 		req.CommonName = cnfAnchor.CommonName
 		req.AltNames = cnfAnchor.AltNames
 
-		dest, err := config.MakeDest(cnfAnchor.Dest, cnfAnchor.DestOptions)
+		dest, err := config.ToDest(cnfAnchor.Dest, cnfAnchor.DestOptions)
 		if err != nil {
 			return errors.Wrap(err, "make dest for anchor")
 		}
-		action, err := config.MakeAction(cnfAnchor.Action)
+		action, err := config.ToAction(cnfAnchor.Action)
 		if err != nil {
 			return errors.Wrap(err, "make action for anchor")
 		}

@@ -9,7 +9,7 @@ import (
 	"github.com/tlmiller/disttrust/dest"
 )
 
-func MakeDest(id string, opts json.RawMessage) (dest.Dest, error) {
+func ToDest(id string, opts json.RawMessage) (dest.Dest, error) {
 	if id != "file" {
 		return nil, fmt.Errorf("unknown dest type '%s'", id)
 	}

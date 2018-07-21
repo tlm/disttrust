@@ -4,22 +4,40 @@ import (
 	"fmt"
 )
 
+type Store struct {
+	providers map[string]Provider
+}
+
 var (
-	providers = make(map[string]Provider)
+	defaultStore *Store
 )
 
-func Fetch(name string) (Provider, error) {
-	if p, exists := providers[name]; exists {
+func DefaultStore() *Store {
+	return defaultStore
+}
+
+func (s *Store) Fetch(name string) (Provider, error) {
+	if p, exists := s.providers[name]; exists {
 		return p, nil
 	}
 	return nil, fmt.Errorf("no provider registered for '%s'", name)
 }
 
-func Store(name string, p Provider) error {
-	if _, exists := providers[name]; exists {
+func init() {
+	defaultStore = NewStore()
+}
+
+func NewStore() *Store {
+	return &Store{
+		providers: make(map[string]Provider),
+	}
+}
+
+func (s *Store) Store(name string, p Provider) error {
+	if _, exists := s.providers[name]; exists {
 		return fmt.Errorf("provider for name '%s' already exists", name)
 	}
 
-	providers[name] = p
+	s.providers[name] = p
 	return nil
 }

@@ -5,12 +5,13 @@ import (
 )
 
 func TestDupeNameProviders(t *testing.T) {
-	err := Store("test", nil)
+	store := DefaultStore()
+	err := store.Store("test", nil)
 	if err != nil {
 		t.Fatalf("receeved error for provider store: %v", err)
 	}
 
-	err = Store("test", nil)
+	err = store.Store("test", nil)
 	if err == nil {
 		t.Fatal("should have received error for duplicate provider name")
 	}

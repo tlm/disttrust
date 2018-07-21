@@ -9,12 +9,12 @@ import (
 
 func TestNoMappers(t *testing.T) {
 	rawOpt := json.RawMessage(`{}`)
-	provider, err := MakeProvider("test", rawOpt)
+	provider, err := ToProvider("test", rawOpt)
 	if err == nil {
-		t.Fatalf("MakeProvider should have errored with no mapper")
+		t.Fatalf("ToProvider should have errored with no mapper")
 	}
 	if provider != nil {
-		t.Fatalf("non nil provider returned for failed MakeProvider")
+		t.Fatalf("non nil provider returned for failed ToProvider")
 	}
 }
 
@@ -24,13 +24,13 @@ func TestRegisterDuplicate(t *testing.T) {
 	})
 	id := provider.Id("test")
 
-	err := RegisterProvider(id, mapper)
+	err := MapProvider(id, mapper)
 	if err != nil {
-		t.Errorf("received error for first register: %v", err)
+		t.Errorf("received error for first mapping: %v", err)
 	}
 
-	err = RegisterProvider(id, mapper)
+	err = MapProvider(id, mapper)
 	if err == nil {
-		t.Error("expected error for duplicate register")
+		t.Error("expected error for duplicate map")
 	}
 }

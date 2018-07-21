@@ -6,10 +6,6 @@ import (
 	"github.com/pkg/errors"
 )
 
-type Action struct {
-	Command []string `json:"command"`
-}
-
 type Anchor struct {
 	Action      Action          `json:"action"`
 	AltNames    []string        `json:"altNames"`
@@ -24,10 +20,14 @@ type Config struct {
 	Anchors   []Anchor   `json:"anchors"`
 }
 
-type Provider struct {
-	Id      string          `json:"id"`
-	Name    string          `json:"name"`
-	Options json.RawMessage `json:"options"`
+func DefaultConfig() *Config {
+	return &Config{}
+}
+
+func mergeConfigs(dst *Config, src *Config) *Config {
+	dst.Providers = append(dst.Providers, src.Providers...)
+	dst.Anchors = append(dst.Anchors, src.Anchors...)
+	return dst
 }
 
 func New(data []byte) (*Config, error) {
