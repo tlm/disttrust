@@ -1,13 +1,21 @@
 package conductor
 
 import (
+	"context"
 	"testing"
+
+	"github.com/tlmiller/disttrust/provider"
 )
 
-// Tests the correct bahaviour is shown when stop is called on a member that has
-// never had a subsequent Play() call. This call should result in an error
-// saying the member is already stopped
-func TestMemberNoInitStop(t *testing.T) {
-	//member := Member{}
-	//	member.Stop()
+func TestMemberAlreadyStopped(t *testing.T) {
+	member := NewMember(nil, provider.Request{}, nil)
+	member.Stop()
+	go member.Play()
+
+	select {
+	case err := <-member.DoneCh():
+		if err != context.Canceled {
+			t.Fatalf("got unexpected error instead of context canceled: %v", err)
+		}
+	}
 }

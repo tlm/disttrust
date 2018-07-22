@@ -40,12 +40,6 @@ func (m *DefaultMember) DoneCh() <-chan error {
 	return m.doneCh
 }
 
-func (m *DefaultMember) setDone(err error) {
-	m.doneCh <- err
-	close(m.doneCh)
-	m.cancel()
-}
-
 func NewMember(provider provider.Provider, request provider.Request, handler LeaseHandler) Member {
 	mem := &DefaultMember{
 		doneCh:   make(chan error),
@@ -125,6 +119,12 @@ func (m *DefaultMember) Play() {
 			return
 		}
 	}
+}
+
+func (m *DefaultMember) setDone(err error) {
+	m.doneCh <- err
+	close(m.doneCh)
+	m.cancel()
 }
 
 func (m *DefaultMember) Stop() {
