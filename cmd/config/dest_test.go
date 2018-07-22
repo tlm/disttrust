@@ -14,7 +14,7 @@ func TestUnknownDestId(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		_, err := MakeDest(test, json.RawMessage([]byte{}))
+		_, err := ToDest(test, json.RawMessage([]byte{}))
 		if err == nil {
 			t.Fatalf("expected unknown dest type error for %s", test)
 		}
