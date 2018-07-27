@@ -14,6 +14,7 @@ import (
 
 type Member interface {
 	DoneCh() <-chan error
+	Name() string
 	Play()
 	Stop()
 }
@@ -32,6 +33,7 @@ type DefaultMember struct {
 	cancel   func()
 	doneCh   chan error
 	handler  LeaseHandler
+	name     string
 	provider provider.Provider
 	request  provider.Request
 }
@@ -40,10 +42,15 @@ func (m *DefaultMember) DoneCh() <-chan error {
 	return m.doneCh
 }
 
-func NewMember(provider provider.Provider, request provider.Request, handler LeaseHandler) Member {
+func (m *DefaultMember) Name() string {
+	return m.name
+}
+
+func NewMember(name string, provider provider.Provider, request provider.Request, handler LeaseHandler) Member {
 	mem := &DefaultMember{
 		doneCh:   make(chan error),
 		handler:  handler,
+		name:     name,
 		provider: provider,
 		request:  request,
 	}

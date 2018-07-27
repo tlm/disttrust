@@ -1,7 +1,6 @@
 package conductor
 
 import (
-	"errors"
 	"testing"
 )
 
@@ -27,38 +26,5 @@ func (t *testMember) Play() {
 func (t *testMember) Stop() {
 }
 
-func TestConductorMemberDone(t *testing.T) {
-	member := testMember{
-		doneCh: make(chan error),
-	}
-
-	c := NewConductor().AddMember(&member)
-	err := c.Watch()
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if member.playCount != 1 {
-		t.Fatalf("expected")
-	}
-}
-
-func TestConductorMaxRetries(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping test in short mode.")
-	}
-
-	member := testMember{
-		doneCh:   make(chan error),
-		playFunc: func() error { return errors.New("test error") },
-	}
-
-	c := NewConductor().AddMember(&member)
-	err := c.Watch()
-	if err == nil {
-		t.Fatalf("expected error for member consuming the maximum number of retries")
-	}
-	if member.playCount != MaxRetry+1 {
-		t.Fatalf("expected member to be played %d times but got %d",
-			MaxRetry+1, member.playCount)
-	}
+func TestDummy(t *testing.T) {
 }

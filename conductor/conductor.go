@@ -1,72 +1,67 @@
 package conductor
 
 import (
-	"context"
-	"time"
-
-	"github.com/carlescere/goback"
-
 	"github.com/sirupsen/logrus"
 )
 
 type Conductor struct {
-	cancel  func()
-	context context.Context
-	members []*Member
-	watchCh chan error
+	healthErr error
+	members   []*MemberStatus
+	memCount  int32
+	watchCh   chan *MemberStatus
 }
-
-const (
-	MaxRetry int = 4
-)
-
-var (
-	MaxBackoff = 30 * time.Second
-	MinBackoff = 3 * time.Second
-)
 
 func NewConductor() *Conductor {
 	return &Conductor{
-		watchCh: make(chan error),
+		healthErr: nil,
+		watchCh:   make(chan *MemberStatus),
 	}
 }
 
-func (c *Conductor) AddMember(mem Member) *Conductor {
-	go func() {
-		var err, retryErr error
-		backoff := goback.SimpleBackoff{
-			MaxAttempts: MaxRetry,
-			Min:         MinBackoff,
-			Max:         MaxBackoff,
+func (c *Conductor) AddMember(member Member) *MemberStatus {
+	mstatus := NewMemberStatus(member)
+	c.members = append(c.members, mstatus)
+	return mstatus
+}
+
+func (c *Conductor) Play() *Conductor {
+	for _, mstatus := range c.members {
+		if running, err := mstatus.State(); running || err != nil {
+			continue
 		}
-		for ; retryErr == nil; retryErr = goback.Wait(&backoff) {
+		mstatus.setState(true, nil)
+		go func() {
 			log := logrus.WithFields(logrus.Fields{
-				"retries": backoff.Attempts,
+				"member": mstatus.member.Name(),
 			})
 			log.Info("playing member")
-			err = nil
-			go mem.Play()
+			go mstatus.member.Play()
 
-			select {
-			case err = <-mem.DoneCh():
-				if err == nil {
-					log.Info("member play stopped")
-					c.watchCh <- nil
-					return
+		Outer:
+			for {
+				select {
+				case err := <-mstatus.member.DoneCh():
+					log.Info("member stopped")
+					mstatus.setState(false, err)
+					c.watchCh <- mstatus
+					break Outer
 				}
-				log.Errorf("member play stoped: %v", err)
 			}
-		}
-		c.watchCh <- err
-	}()
+		}()
+	}
 	return c
 }
 
-func (c *Conductor) Watch() error {
+func (c *Conductor) Watch() {
 	for {
 		select {
-		case err := <-c.watchCh:
-			return err
+		case mstatus := <-c.watchCh:
+			if _, err := mstatus.State(); err != nil {
+				log := logrus.WithFields(logrus.Fields{
+					"member": mstatus.member.Name(),
+				})
+				log.Errorf("member failed: %v", err)
+			}
 		}
 	}
 }

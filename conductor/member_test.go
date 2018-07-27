@@ -8,7 +8,7 @@ import (
 )
 
 func TestMemberAlreadyStopped(t *testing.T) {
-	member := NewMember(nil, provider.Request{}, nil)
+	member := NewMember("", nil, provider.Request{}, nil)
 	member.Stop()
 	go member.Play()
 

@@ -13,6 +13,7 @@ import (
 	"github.com/tlmiller/disttrust/cmd/config"
 	"github.com/tlmiller/disttrust/conductor"
 	"github.com/tlmiller/disttrust/provider"
+	"github.com/tlmiller/disttrust/server"
 )
 
 var (
@@ -71,24 +72,38 @@ func Run(cmd *cobra.Command, args []string) {
 		log.Fatalf("making config: %v", err)
 	}
 
+	log.Debug("applying providers from config")
 	err = applyProviders(config.Providers, provider.DefaultStore())
 	if err != nil {
 		log.Fatalf("applying providers: %v", err)
 	}
 
-	err = startAnchors(config.Anchors, provider.DefaultStore())
+	log.Debug("applying anchors from config")
+	status, err := applyAnchors(config.Anchors, manager, provider.DefaultStore())
 	if err != nil {
-		log.Fatalf("starting anchors: %v", err)
+		log.Fatalf("applying anchors: %v", err)
 	}
 
-	manager.Watch()
+	var apiServ *server.ApiServer
+	if config.Api.Address != "" {
+		apiServ = server.NewApiServer(config.Api.Address)
+		for _, s := range status {
+			apiServ.AddHealthzChecks(s)
+		}
+		go apiServ.Serve()
+	}
+
+	manager.Play().Watch()
 }
 
-func startAnchors(anchors []config.Anchor, store *provider.Store) error {
+func applyAnchors(anchors []config.Anchor, con *conductor.Conductor,
+	store *provider.Store) ([]*conductor.MemberStatus, error) {
+
+	status := []*conductor.MemberStatus{}
 	for _, cnfAnchor := range anchors {
 		prv, err := store.Fetch(cnfAnchor.Provider)
 		if err != nil {
-			return errors.Wrap(err, "getting anchor provider")
+			return nil, errors.Wrap(err, "getting anchor provider")
 		}
 
 		req := provider.Request{}
@@ -97,16 +112,16 @@ func startAnchors(anchors []config.Anchor, store *provider.Store) error {
 
 		dest, err := config.ToDest(cnfAnchor.Dest, cnfAnchor.DestOptions)
 		if err != nil {
-			return errors.Wrap(err, "make dest for anchor")
+			return nil, errors.Wrap(err, "make dest for anchor")
 		}
 		action, err := config.ToAction(cnfAnchor.Action)
 		if err != nil {
-			return errors.Wrap(err, "make action for anchor")
+			return nil, errors.Wrap(err, "make action for anchor")
 		}
 
 		memHandle := conductor.DefaultLeaseHandle(dest, action)
-		member := conductor.NewMember(prv, req, memHandle)
-		manager.AddMember(member)
+		member := conductor.NewMember(cnfAnchor.Name, prv, req, memHandle)
+		status = append(status, con.AddMember(member))
 	}
-	return nil
+	return status, nil
 }
