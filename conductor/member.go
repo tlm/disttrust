@@ -90,10 +90,6 @@ func (m *DefaultMember) Play() {
 	}
 
 	for {
-		log = log.WithFields(logrus.Fields{
-			"lease_id":  lease.ID(),
-			"lease_end": lease.Till().Format(time.RFC3339),
-		})
 		log.Info("sleeping for next lease renewal")
 		r := NewRenewer(lease)
 		go r.Renew()
@@ -106,6 +102,10 @@ func (m *DefaultMember) Play() {
 				m.setDone(errors.Wrap(err, "renewing lease"))
 				return
 			}
+			log = log.WithFields(logrus.Fields{
+				"lease_id":  lease.ID(),
+				"lease_end": lease.Till().Format(time.RFC3339),
+			})
 			log.Info("acquired new lease")
 			err = m.handler.Handle(logu.WithLogger(m.context, log), lease)
 			if err != nil {
