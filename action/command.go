@@ -23,11 +23,14 @@ func CommandFromSlice(slice []string) (*Command, error) {
 
 func (c *Command) Fire(ctx context.Context) error {
 	cmd := exec.CommandContext(ctx, c.slice[0], c.slice[1:]...)
+	cmd.Stderr = nil
 	cmd.Stdout = nil
-	out, err := cmd.Output()
+	_, err := cmd.Output()
 
-	if err != nil {
-		return fmt.Errorf("command action: %v - %s", err, out)
+	if exErr, ok := err.(*exec.ExitError); err != nil && ok {
+		return fmt.Errorf("command action: %v - %s", exErr, exErr.Stderr)
+	} else if err != nil {
+		return fmt.Errorf("command action: %v", exErr)
 	}
 	return nil
 }
