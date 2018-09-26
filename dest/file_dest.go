@@ -49,7 +49,7 @@ func (f *File) Send(res *provider.Response) error {
 		if err != nil {
 			return errors.Wrap(err, "writing certificate bundle file")
 		}
-		_, err = s.WriteString(res.CABundle + "\n" + res.Certificate)
+		_, err = s.WriteString(res.Certificate + "\n" + res.CABundle)
 		if err != nil {
 			return errors.Wrap(err, "writing certificate bundle file")
 		}
