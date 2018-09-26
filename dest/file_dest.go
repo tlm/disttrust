@@ -6,49 +6,68 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/tlmiller/disttrust/file"
 	"github.com/tlmiller/disttrust/provider"
 )
 
 type File struct {
-	CAFile                string
-	CertificateFile       string
-	CertificateBundleFile string
-	PrivateKeyFile        string
+	CA                file.File
+	Certificate       file.File
+	CertificateBundle file.File
+	PrivateKey        file.File
 }
 
 func (f *File) Send(res *provider.Response) error {
 
-	if res.CA != "" && f.CAFile != "" {
-		err := ioutil.WriteFile(f.CAFile, []byte(res.CA), os.FileMode(0644))
+	if res.CA != "" && f.CA.HasPath() {
+		err := ioutil.WriteFile(f.CA.Path, []byte(res.CA), f.CA.Mode)
 		if err != nil {
 			return errors.Wrap(err, "writing ca file")
 		}
+		err = f.CA.Chown()
+		if err != nil {
+			return errors.Wrap(err, "chown ca file")
+		}
 	}
 
-	if res.Certificate != "" && f.CertificateFile != "" {
-		err := ioutil.WriteFile(f.CertificateFile, []byte(res.Certificate), os.FileMode(0644))
+	if res.Certificate != "" && f.Certificate.HasPath() {
+		err := ioutil.WriteFile(f.Certificate.Path, []byte(res.Certificate),
+			f.Certificate.Mode)
 		if err != nil {
 			return errors.Wrap(err, "writing certificate file")
 		}
-	}
-
-	if res.CABundle != "" && f.CertificateBundleFile != "" {
-		f, err := os.OpenFile(f.CertificateBundleFile,
-			os.O_WRONLY|os.O_TRUNC|os.O_CREATE, os.FileMode(0644))
-		defer f.Close()
+		err = f.Certificate.Chown()
 		if err != nil {
-			return errors.Wrap(err, "writing certificate bundle file")
-		}
-		_, err = f.WriteString(res.CABundle + "\n" + res.Certificate)
-		if err != nil {
-			return errors.Wrap(err, "writing certificate bundle file")
+			return errors.Wrap(err, "chown certificate file")
 		}
 	}
 
-	if res.PrivateKey != "" && f.PrivateKeyFile != "" {
-		err := ioutil.WriteFile(f.PrivateKeyFile, []byte(res.PrivateKey), os.FileMode(0600))
+	if res.CABundle != "" && f.CertificateBundle.HasPath() {
+		s, err := os.OpenFile(f.CertificateBundle.Path,
+			os.O_WRONLY|os.O_TRUNC|os.O_CREATE, f.CertificateBundle.Mode)
+		defer s.Close()
+		if err != nil {
+			return errors.Wrap(err, "writing certificate bundle file")
+		}
+		_, err = s.WriteString(res.CABundle + "\n" + res.Certificate)
+		if err != nil {
+			return errors.Wrap(err, "writing certificate bundle file")
+		}
+		err = f.CertificateBundle.Chown()
+		if err != nil {
+			return errors.Wrap(err, "chown certificate bundle file")
+		}
+	}
+
+	if res.PrivateKey != "" && f.PrivateKey.HasPath() {
+		err := ioutil.WriteFile(f.PrivateKey.Path, []byte(res.PrivateKey),
+			f.PrivateKey.Mode)
 		if err != nil {
 			return errors.Wrap(err, "writing private key file")
+		}
+		err = f.PrivateKey.Chown()
+		if err != nil {
+			return errors.Wrap(err, "chown private key file")
 		}
 	}
 	return nil

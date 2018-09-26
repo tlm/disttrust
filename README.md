@@ -164,6 +164,8 @@ dest specific options. Options specific to the dest type choosen.
     `certBundleFile` - optional location to output issued certificate bundle to
     
     `privKeyFile` - optional location to output private key to
+    
+    All file options support a Mode, Gid and Uid options appended at the end. Example `privKeyFileMode`
 
 `action` - required
 
