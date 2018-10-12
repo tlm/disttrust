@@ -1,6 +1,8 @@
 package conductor
 
 import (
+	"sync"
+
 	"github.com/sirupsen/logrus"
 )
 
@@ -8,13 +10,17 @@ type Conductor struct {
 	healthErr error
 	members   []*MemberStatus
 	memCount  int32
+	stopCh    chan struct{}
 	watchCh   chan *MemberStatus
+	waitGroup sync.WaitGroup
 }
 
 func NewConductor() *Conductor {
 	return &Conductor{
 		healthErr: nil,
+		stopCh:    make(chan struct{}),
 		watchCh:   make(chan *MemberStatus),
+		waitGroup: sync.WaitGroup{},
 	}
 }
 
@@ -24,32 +30,52 @@ func (c *Conductor) AddMember(member Member) *MemberStatus {
 	return mstatus
 }
 
+func (c *Conductor) AddMembers(members ...Member) []*MemberStatus {
+	statuses := make([]*MemberStatus, len(members))
+	for i, member := range members {
+		statuses[i] = c.AddMember(member)
+	}
+	return statuses
+}
+
 func (c *Conductor) Play() *Conductor {
-	for _, mstatus := range c.members {
-		if running, err := mstatus.State(); running || err != nil {
+	for _, fmstatus := range c.members {
+		if running, err := fmstatus.State(); running || err != nil {
 			continue
 		}
-		mstatus.setState(true, nil)
+		fmstatus.setState(true, nil)
+		gmstatus := fmstatus
+
+		c.waitGroup.Add(1)
 		go func() {
 			log := logrus.WithFields(logrus.Fields{
-				"member": mstatus.member.Name(),
+				"member": gmstatus.member.Name(),
 			})
 			log.Info("playing member")
-			go mstatus.member.Play()
+			go gmstatus.member.Play()
 
 		Outer:
 			for {
 				select {
-				case err := <-mstatus.member.DoneCh():
+				case err := <-gmstatus.member.DoneCh():
 					log.Info("member stopped")
-					mstatus.setState(false, err)
-					c.watchCh <- mstatus
+					gmstatus.setState(false, err)
+					c.watchCh <- gmstatus
+					c.waitGroup.Done()
 					break Outer
+				case <-c.stopCh:
+					gmstatus.member.Stop()
 				}
 			}
 		}()
 	}
+	go c.Watch()
 	return c
+}
+
+func (c *Conductor) Stop() {
+	close(c.stopCh)
+	c.waitGroup.Wait()
 }
 
 func (c *Conductor) Watch() {

@@ -16,11 +16,11 @@ func DefaultStore() *Store {
 	return defaultStore
 }
 
-func (s *Store) Fetch(name string) (Provider, error) {
+func (s *Store) Fetch(name string) (Provider, bool) {
 	if p, exists := s.providers[name]; exists {
-		return p, nil
+		return p, true
 	}
-	return nil, fmt.Errorf("no provider registered for '%s'", name)
+	return nil, false
 }
 
 func init() {
@@ -31,6 +31,10 @@ func NewStore() *Store {
 	return &Store{
 		providers: make(map[string]Provider),
 	}
+}
+
+func (s *Store) Remove(name string) {
+	delete(s.providers, name)
 }
 
 func (s *Store) Store(name string, p Provider) error {

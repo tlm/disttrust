@@ -6,16 +6,6 @@ import (
 	"github.com/pkg/errors"
 )
 
-type Anchor struct {
-	Action      Action          `json:"action"`
-	AltNames    []string        `json:"altNames"`
-	CommonName  string          `json:"cn"`
-	Dest        string          `json:"dest"`
-	DestOptions json.RawMessage `json:"destOpts"`
-	Name        string          `json:"name"`
-	Provider    string          `json:"provider"`
-}
-
 type Config struct {
 	Api       Api        `json:"api"`
 	Providers []Provider `json:"providers"`
