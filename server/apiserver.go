@@ -2,21 +2,18 @@ package server
 
 import (
 	"net/http"
-
-	"github.com/tlmiller/disttrust/server/healthz"
 )
 
 type ApiServer struct {
-	healthzChecks []healthz.Checker
-	server        http.Server
-	stopCh        chan struct{}
+	Mux    *http.ServeMux
+	server http.Server
 }
 
 func NewApiServer(address string) *ApiServer {
 	return &ApiServer{
+		Mux: http.NewServeMux(),
 		server: http.Server{
 			Addr: address,
 		},
-		stopCh: make(chan struct{}),
 	}
 }

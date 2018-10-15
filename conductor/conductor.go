@@ -11,7 +11,6 @@ type Conductor struct {
 	members   []*MemberStatus
 	memCount  int32
 	stopCh    chan struct{}
-	watchCh   chan *MemberStatus
 	waitGroup sync.WaitGroup
 }
 
@@ -19,7 +18,6 @@ func NewConductor() *Conductor {
 	return &Conductor{
 		healthErr: nil,
 		stopCh:    make(chan struct{}),
-		watchCh:   make(chan *MemberStatus),
 		waitGroup: sync.WaitGroup{},
 	}
 }
@@ -60,7 +58,9 @@ func (c *Conductor) Play() *Conductor {
 				case err := <-gmstatus.member.DoneCh():
 					log.Info("member stopped")
 					gmstatus.setState(false, err)
-					c.watchCh <- gmstatus
+					if _, err := gmstatus.State(); err != nil {
+						log.Errorf("member failed: %v", err)
+					}
 					c.waitGroup.Done()
 					break Outer
 				case <-c.stopCh:
@@ -69,25 +69,10 @@ func (c *Conductor) Play() *Conductor {
 			}
 		}()
 	}
-	go c.Watch()
 	return c
 }
 
 func (c *Conductor) Stop() {
 	close(c.stopCh)
 	c.waitGroup.Wait()
-}
-
-func (c *Conductor) Watch() {
-	for {
-		select {
-		case mstatus := <-c.watchCh:
-			if _, err := mstatus.State(); err != nil {
-				log := logrus.WithFields(logrus.Fields{
-					"member": mstatus.member.Name(),
-				})
-				log.Errorf("member failed: %v", err)
-			}
-		}
-	}
 }

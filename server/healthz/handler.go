@@ -6,7 +6,7 @@ import (
 	"net/http"
 )
 
-func handleRootHealthz(checks ...Checker) http.HandlerFunc {
+func handleRootHealthz(fetcher ChecksFetcher) http.HandlerFunc {
 	return http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
 		if req.Method != http.MethodGet && req.Method != http.MethodHead {
 			res.WriteHeader(http.StatusMethodNotAllowed)
@@ -15,7 +15,7 @@ func handleRootHealthz(checks ...Checker) http.HandlerFunc {
 
 		failed := false
 		var verboseOut bytes.Buffer
-		for _, check := range checks {
+		for _, check := range fetcher() {
 			if err := check.Check(); err != nil {
 				fmt.Fprintf(&verboseOut, "[-]%v failed\n", check.Name())
 				failed = true
@@ -41,6 +41,6 @@ func handleRootHealthz(checks ...Checker) http.HandlerFunc {
 	})
 }
 
-func InstallHandler(mux *http.ServeMux, checks ...Checker) {
-	mux.Handle("/healthz", handleRootHealthz(checks...))
+func (h *Healthz) InstallHandler(mux *http.ServeMux) {
+	mux.Handle("/healthz", handleRootHealthz(h.Checks))
 }

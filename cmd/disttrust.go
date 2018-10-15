@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"sync"
 	"syscall"
 
 	log "github.com/sirupsen/logrus"
@@ -13,7 +14,8 @@ import (
 	"github.com/tlmiller/disttrust/cmd/config"
 	"github.com/tlmiller/disttrust/conductor"
 	"github.com/tlmiller/disttrust/provider"
-	_ "github.com/tlmiller/disttrust/server"
+	"github.com/tlmiller/disttrust/server"
+	"github.com/tlmiller/disttrust/server/healthz"
 )
 
 var (
@@ -47,6 +49,9 @@ func preRun(cmd *cobra.Command, args []string) {
 
 func Run(cmd *cobra.Command, args []string) {
 	providers := provider.DefaultStore()
+	var apiServ *server.ApiServer
+	apiServSetup := sync.Once{}
+	healthApi := healthz.New()
 
 	sigCh := make(chan os.Signal, 1)
 	signal.Notify(sigCh, os.Interrupt, syscall.SIGHUP)
@@ -56,6 +61,14 @@ func Run(cmd *cobra.Command, args []string) {
 		if err != nil {
 			log.Fatalf("making config: %v", err)
 		}
+
+		apiServSetup.Do(func() {
+			if userConfig.Api.Address != "" {
+				apiServ = server.NewApiServer(userConfig.Api.Address)
+				healthApi.InstallHandler(apiServ.Mux)
+				go apiServ.Serve()
+			}
+		})
 
 		log.Debug("building provider store from config")
 		providers, err = config.ToProviderStore(userConfig.Providers, providers)
@@ -70,17 +83,12 @@ func Run(cmd *cobra.Command, args []string) {
 		}
 
 		manager := conductor.NewConductor()
-		_ = manager.AddMembers(members...)
-
-		//var apiServ *server.ApiServer
-		//if userConfig.Api.Address != "" {
-		//	apiServ = server.NewApiServer(userConfig.Api.Address)
-		//	for _, s := range mstatuses {
-		//		apiServ.AddHealthzChecks(s)
-		//	}
-		//	go apiServ.Serve()
-		//}
-
+		mstatuses := manager.AddMembers(members...)
+		checks := make([]healthz.Checker, len(mstatuses))
+		for i, ms := range mstatuses {
+			checks[i] = ms
+		}
+		healthApi.SetChecks(checks...)
 		manager.Play()
 
 		sig := <-sigCh
@@ -92,5 +100,8 @@ func Run(cmd *cobra.Command, args []string) {
 		} else {
 			break
 		}
+	}
+	if apiServ != nil {
+		apiServ.Stop()
 	}
 }
