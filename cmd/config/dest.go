@@ -12,46 +12,31 @@ import (
 	"github.com/tlmiller/disttrust/file"
 )
 
+type Dest struct {
+	Dest        string          `json:"dest"`
+	DestOptions json.RawMessage `json:"destOpts"`
+}
+
+type DestMapper func(json.RawMessage) (dest.Dest, error)
+
+var (
+	destMappings = make(map[string]DestMapper)
+)
+
+func MapDest(id string, mapper DestMapper) error {
+	if _, exists := destMappings[id]; exists {
+		return fmt.Errorf("dest mapping already registered for id '%s'", id)
+	}
+	destMappings[id] = mapper
+	return nil
+}
+
 func ToDest(id string, opts json.RawMessage) (dest.Dest, error) {
-	if id != "file" {
-		return nil, fmt.Errorf("unknown dest type '%s'", id)
+	mapper, exists := destMappings[id]
+	if !exists {
+		return nil, fmt.Errorf("dest mapper does not exist for id '%s'", id)
 	}
-	uopts := map[string]string{}
-	err := json.Unmarshal(opts, &uopts)
-	if err != nil {
-		return nil, errors.Wrap(err, "parsing dest json")
-	}
-	fdest := dest.File{}
-
-	caFile, err := destBuilder(uopts["caFile"], uopts["caFileMode"],
-		uopts["caFileGid"], uopts["caFileUid"])
-	if err != nil {
-		return nil, errors.Wrap(err, "caFile")
-	}
-	fdest.CA = caFile
-
-	cFile, err := destBuilder(uopts["certFile"], uopts["certFileMode"],
-		uopts["certFileGid"], uopts["certFileUid"])
-	if err != nil {
-		return nil, errors.Wrap(err, "certFile")
-	}
-	fdest.Certificate = cFile
-
-	cbFile, err := destBuilder(uopts["certBundleFile"], uopts["certBundleFileMode"],
-		uopts["certBundleFileGid"], uopts["certBundleFileUid"])
-	if err != nil {
-		return nil, errors.Wrap(err, "certBundleFile")
-	}
-	fdest.CertificateBundle = cbFile
-
-	pkfile, err := destBuilder(uopts["privKeyFile"], uopts["privKeyFileMode"],
-		uopts["privKeyFileGid"], uopts["privKeyFileUid"])
-	if err != nil {
-		return nil, errors.Wrap(err, "privKeyFile")
-	}
-	fdest.PrivateKey = pkfile
-
-	return &fdest, nil
+	return mapper(opts)
 }
 
 func destBuilder(path, mode, gid, uid string) (file.File, error) {
