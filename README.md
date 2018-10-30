@@ -1,6 +1,6 @@
-# Overview
+# disttrust
 
-disttrust is a program for requesting tls certificates from a provider and
+A program for requesting tls certificates from a provider and
 maintaining their validity on the local system. It currently only implements the
 **vault** pki provider using approle based auth. The design is such that new
 providers and auth methods can be added with minimal work.
@@ -23,9 +23,9 @@ Installation on the local system can be done with a normal go get
 
 disttrust is configured from one or more files supplied by a flag. For ease
 of deployments many seperate config files can be provided each with different
-providers and anchors that will be aggregated together at run time.
+providers and anchors that will be merged together at run time.
 
-`disttrust -c <cfile.json1> -c <cfile.json2> ...`
+`disttrust -c <cfile.json1> -c <cfile.json2> ... -c <config_dir>`
 
 See [config](#Config) for documentation on the configuration properties.
 
