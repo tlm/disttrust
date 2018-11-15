@@ -73,7 +73,7 @@ func ToProviderStore(cnfProviders []Provider, store *provider.Store) (*provider.
 		var err error
 		var genProvider provider.Provider
 		if p, exists := store.Fetch(cnfProvider.Name); exists {
-			genProvider, err = ToProviderOnUpdate(cnfProvider.Name,
+			genProvider, err = ToProviderOnUpdate(cnfProvider.Id,
 				cnfProvider.Options, p)
 		} else {
 			genProvider, err = ToProvider(cnfProvider.Id, cnfProvider.Options)
