@@ -74,7 +74,9 @@ func (p *Provider) Issue(req *provider.Request) (provider.Lease, error) {
 	path := fmt.Sprintf("%s/issue/%s", p.config.Path, p.config.Role)
 
 	data := map[string]interface{}{}
-	data["alt_names"] = strings.Join(req.AltNames, ",")
+	data["alt_names"] = strings.Join(append(req.AltNames.DNSNames,
+		req.AltNames.EmailAddresses...), ",")
+	data["ip_sans"] = strings.Join(req.AltNames.IPAddresses, ",")
 	data["common_name"] = req.CommonName
 	data["format"] = "pem"
 

@@ -13,14 +13,20 @@ import (
 	"github.com/tlmiller/disttrust/provider"
 )
 
+type AltNamesConfig struct {
+	DNSNames    []string
+	IPAddresses []string
+}
+
 type AnchorConfig struct {
-	ActionConfig
-	AltNames   []string
+	Action     ActionConfig
+	AltNames   AltNamesConfig
 	CommonName string
 	CN         string
-	DestConfig
-	Name     string
-	Provider string
+	Dest       string
+	DestOpts   map[string]interface{}
+	Name       string
+	Provider   string
 }
 
 type ProviderFetcher func(string) (provider.Provider, bool)
@@ -46,7 +52,10 @@ func GetMembers(v *viper.Viper, pFetcher ProviderFetcher) ([]conductor.Member, e
 		}
 
 		req := provider.Request{
-			AltNames: anchor.AltNames,
+			AltNames: provider.AltNames{
+				DNSNames:    anchor.AltNames.DNSNames,
+				IPAddresses: anchor.AltNames.IPAddresses,
+			},
 		}
 
 		if anchor.CN != "" {
@@ -56,13 +65,16 @@ func GetMembers(v *viper.Viper, pFetcher ProviderFetcher) ([]conductor.Member, e
 			req.CommonName = anchor.CommonName
 		}
 
-		dest, err := GetDest(&anchor.DestConfig)
+		dest, err := GetDest(&DestConfig{
+			Dest:     anchor.Dest,
+			DestOpts: anchor.DestOpts,
+		})
 		if err != nil {
 			return members, errors.Wrapf(err, "failed getting dest for member %s",
 				anchor.Name)
 		}
 
-		action, err := GetAction(&anchor.ActionConfig)
+		action, err := GetAction(&anchor.Action)
 		if err != nil {
 			return members, errors.Wrapf(err, "failed getting anchor for member %s",
 				anchor.Name)
