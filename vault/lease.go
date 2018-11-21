@@ -23,6 +23,14 @@ type Lease struct {
 	till      time.Time
 }
 
+const (
+	KeyCAChain      = "ca_chain"
+	KeyCertificate  = "certificate"
+	KeyIssuingCA    = "issuing_ca"
+	KeyPrivateKey   = "private_key"
+	KeySerialNumber = "serial_number"
+)
+
 func (l *Lease) HasResponse() bool {
 	return l.response != nil
 }
@@ -79,23 +87,24 @@ func convertRawCABundle(bundle []interface{}) string {
 func makeResponse(data map[string]interface{}) (*provider.Response, error) {
 	res := provider.Response{}
 	var ok bool
-	caBundleRaw, ok := data["ca_chain"].([]interface{})
+
+	caBundleRaw, ok := data[KeyCAChain].([]interface{})
 	if ok {
 		res.CABundle = convertRawCABundle(caBundleRaw)
 	}
-	res.Certificate, ok = data["certificate"].(string)
+	res.Certificate, ok = data[KeyCertificate].(string)
 	if !ok {
 		return nil, errors.New("unknown type for issued certificate")
 	}
-	res.CA, ok = data["issuing_ca"].(string)
+	res.CA, ok = data[KeyIssuingCA].(string)
 	if !ok {
 		return nil, errors.New("unknown type for issuing ca")
 	}
-	res.PrivateKey, ok = data["private_key"].(string)
+	res.PrivateKey, ok = data[KeyPrivateKey].(string)
 	if !ok {
 		return nil, errors.New("unknown type for issued private key")
 	}
-	res.Serial, ok = data["serial_number"].(string)
+	res.Serial, ok = data[KeySerialNumber].(string)
 	if !ok {
 		return nil, errors.New("unknown type for issued serial")
 	}

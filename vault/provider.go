@@ -2,7 +2,6 @@ package vault
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/hashicorp/vault/api"
 
@@ -13,8 +12,10 @@ import (
 
 type Config struct {
 	Address string
+	MakeCSR bool
 	Path    string
 	Role    string
+	RollKey bool
 }
 
 type Provider struct {
@@ -22,6 +23,7 @@ type Provider struct {
 	authDoneCh chan error
 	client     *api.Client
 	config     Config
+	issuer     Issuer
 }
 
 const (
@@ -70,30 +72,10 @@ func (p *Provider) Issue(req *provider.Request) (provider.Lease, error) {
 	default:
 	}
 
-	logical := p.client.Logical()
-	path := fmt.Sprintf("%s/issue/%s", p.config.Path, p.config.Role)
-
-	data := map[string]interface{}{}
-	data["alt_names"] = strings.Join(append(req.AltNames.DNSNames,
-		req.AltNames.EmailAddresses...), ",")
-	data["ip_sans"] = strings.Join(req.AltNames.IPAddresses, ",")
-	data["common_name"] = req.CommonName
-	data["format"] = "pem"
-
-	secret, err := logical.Write(path, data)
-	if err != nil {
-		return nil, errors.Wrap(err, "issue certificate from vault")
-	}
-
-	lease, err := LeaseFromSecret(req, secret)
-	if err != nil {
-		return nil, errors.Wrap(err, "issue certificate make lease")
-	}
-	return lease, nil
+	return p.issuer.Issue(req)
 }
 
 func NewProvider(config Config, auth AuthHandler) (*Provider, error) {
-
 	vconfig := api.DefaultConfig()
 	vconfig.Address = config.Address
 
@@ -102,11 +84,14 @@ func NewProvider(config Config, auth AuthHandler) (*Provider, error) {
 		return nil, errors.Wrap(err, "vault provider creation")
 	}
 
+	issuer := GenerateIssuer(config.Path, config.Role, client.Logical())
+
 	nprv := Provider{
 		auth:       auth,
 		authDoneCh: make(chan error),
 		client:     client,
 		config:     config,
+		issuer:     issuer,
 	}
 
 	tknSecret, err := nprv.auth.Auth(client)

@@ -11,16 +11,27 @@ import (
 	"github.com/tlmiller/disttrust/vault"
 )
 
+type RequestConfig struct {
+	CSR     bool
+	RollKey bool
+}
+
 type VaultConfig struct {
 	Address    string
 	AuthMethod string
 	AuthOpts   map[string]string
 	Path       string
+	Request    RequestConfig
 	Role       string
 }
 
 func New() interface{} {
-	return &VaultConfig{}
+	return &VaultConfig{
+		Request: RequestConfig{
+			CSR:     false,
+			RollKey: false,
+		},
+	}
 }
 
 func Mapper(v interface{}) (provider.Provider, error) {
