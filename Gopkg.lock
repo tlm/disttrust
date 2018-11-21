@@ -2,10 +2,10 @@
 
 
 [[projects]]
-  branch = "master"
-  name = "github.com/carlescere/goback"
+  name = "github.com/fsnotify/fsnotify"
   packages = ["."]
-  revision = "ebe10501f4c4682dd56f50a33dac8cb44f025109"
+  revision = "c2828203cd70a50dcccfb2761f8b1f8ceef9a8e9"
+  version = "v1.4.7"
 
 [[projects]]
   branch = "master"
@@ -56,6 +56,7 @@
     ".",
     "hcl/ast",
     "hcl/parser",
+    "hcl/printer",
     "hcl/scanner",
     "hcl/strconv",
     "hcl/token",
@@ -85,6 +86,12 @@
   version = "v1.0"
 
 [[projects]]
+  name = "github.com/magiconair/properties"
+  packages = ["."]
+  revision = "c2353362d570a7bfa228149c62842019201cfb71"
+  version = "v1.8.0"
+
+[[projects]]
   branch = "master"
   name = "github.com/mitchellh/go-homedir"
   packages = ["."]
@@ -95,6 +102,12 @@
   name = "github.com/mitchellh/mapstructure"
   packages = ["."]
   revision = "bb74f1db0675b241733089d5a1faa5dd8b0ef57b"
+
+[[projects]]
+  name = "github.com/pelletier/go-toml"
+  packages = ["."]
+  revision = "c01d1270ff3e442a8a57cddc1c92dc1138598194"
+  version = "v1.2.0"
 
 [[projects]]
   name = "github.com/pkg/errors"
@@ -115,16 +128,43 @@
   version = "v1.0.5"
 
 [[projects]]
+  name = "github.com/spf13/afero"
+  packages = [
+    ".",
+    "mem"
+  ]
+  revision = "d40851caa0d747393da1ffb28f7f9d8b4eeffebd"
+  version = "v1.1.2"
+
+[[projects]]
+  name = "github.com/spf13/cast"
+  packages = ["."]
+  revision = "8c9545af88b134710ab1cd196795e7f2388358d7"
+  version = "v1.3.0"
+
+[[projects]]
   name = "github.com/spf13/cobra"
   packages = ["."]
   revision = "ef82de70bb3f60c65fb8eebacbb2d122ef517385"
   version = "v0.0.3"
 
 [[projects]]
+  name = "github.com/spf13/jwalterweatherman"
+  packages = ["."]
+  revision = "4a4406e478ca629068e7768fc33f3f044173c0a6"
+  version = "v1.0.0"
+
+[[projects]]
   name = "github.com/spf13/pflag"
   packages = ["."]
   revision = "583c0c0531f06d5278b7d917446061adc344b5cd"
   version = "v1.0.1"
+
+[[projects]]
+  name = "github.com/spf13/viper"
+  packages = ["."]
+  revision = "2c12c60302a5a0e62ee102ca9bc996277c2f64f5"
+  version = "v1.2.1"
 
 [[projects]]
   branch = "master"
@@ -180,9 +220,15 @@
   packages = ["rate"]
   revision = "fbb02b2291d28baffd63558aa44b4b56f178d650"
 
+[[projects]]
+  name = "gopkg.in/yaml.v2"
+  packages = ["."]
+  revision = "5420a8b6744d3b0345ab293f6fcba19c978f1183"
+  version = "v2.2.1"
+
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "f037b981efbc12e93b7b78a58eae9c5aa8ad11939d5f08e1cabbfce7f2cccb84"
+  inputs-digest = "efa0ea6ffa772997c585e5ddefb56f1dbf2107dc4f0ca1739ac913abd8f7fbe0"
   solver-name = "gps-cdcl"
   solver-version = 1

@@ -1,10 +1,10 @@
 package server
 
-func (a *ApiServer) Serve() {
-	a.server.Handler = a.Mux
-	a.server.ListenAndServe()
+func (a *APIServer) Serve() {
+	a.Server.Handler = a.Mux
+	a.Server.ListenAndServe()
 }
 
-func (a *ApiServer) Stop() {
-	a.server.Close()
+func (a *APIServer) Stop() {
+	a.Server.Close()
 }

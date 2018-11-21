@@ -10,12 +10,20 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
+	"github.com/spf13/viper"
 
-	"github.com/tlmiller/disttrust/cmd/config"
 	"github.com/tlmiller/disttrust/conductor"
+	"github.com/tlmiller/disttrust/config"
 	"github.com/tlmiller/disttrust/provider"
 	"github.com/tlmiller/disttrust/server"
 	"github.com/tlmiller/disttrust/server/healthz"
+)
+
+const (
+	flagConfig   = "config"
+	flagLogJSON  = "log-json"
+	flagLogLevel = "log-level"
 )
 
 var (
@@ -23,11 +31,10 @@ var (
 )
 
 var disttrustCmd = &cobra.Command{
-	Use:              "disttrust",
-	Short:            "disttrust is a daemon that maintains local TLS certs",
-	Long:             `disttrust is a daemon that maintains local TLS certs on the system through one or more providers`,
-	PersistentPreRun: preRun,
-	Run:              Run,
+	Use:   "disttrust",
+	Short: "disttrust is a daemon that maintains local TLS certs",
+	Long:  `disttrust is a daemon that maintains local TLS certs on the system through one or more providers`,
+	Run:   Run,
 }
 
 func Execute() {
@@ -38,18 +45,17 @@ func Execute() {
 }
 
 func init() {
-	disttrustCmd.Flags().StringSliceVarP(&configFiles, "config", "c",
-		[]string{}, "Config file(s)")
-	disttrustCmd.MarkFlagRequired("config")
-}
-
-func preRun(cmd *cobra.Command, args []string) {
-	setupLogging()
+	disttrustCmd.Flags().StringSliceVarP(&configFiles, flagConfig, "c",
+		[]string{}, "One or more config files and or config directories")
+	disttrustCmd.Flags().Bool(flagLogJSON, false, "log messages in json format")
+	disttrustCmd.Flags().String(flagLogLevel, "",
+		"level to log messages at, one of panic, fatal, error, warn, info, debug or trace")
+	disttrustCmd.MarkFlagRequired(flagConfig)
 }
 
 func Run(cmd *cobra.Command, args []string) {
 	providers := provider.DefaultStore()
-	var apiServ *server.ApiServer
+	var apiServ *server.APIServer
 	apiServSetup := sync.Once{}
 	healthApi := healthz.New()
 
@@ -57,29 +63,36 @@ func Run(cmd *cobra.Command, args []string) {
 	signal.Notify(sigCh, os.Interrupt, syscall.SIGHUP)
 
 	for {
-		userConfig, err := config.FromFiles(configFiles...)
+		confB := config.NewBuilder(configFiles)
+		registerConfigFlags(cmd.Flags(), confB.V)
+		err := confB.BuildAndValidate()
 		if err != nil {
 			log.Fatalf("making config: %v", err)
 		}
 
+		if err := config.SetLogging(confB.V); err != nil {
+			log.Fatalf("configuring logging: %v\n", err)
+		}
+		log.Debug("finished setting up logger")
+
 		apiServSetup.Do(func() {
-			if userConfig.Api.Address != "" {
-				apiServ = server.NewApiServer(userConfig.Api.Address)
-				healthApi.InstallHandler(apiServ.Mux)
-				go apiServ.Serve()
-			}
+			log.Debug("building api server from config")
+			apiServ = config.GetAPIServer(confB.V)
+			healthApi.InstallHandler(apiServ.Mux)
+			log.Debugf("starting api server on %s", apiServ.Server.Addr)
+			go apiServ.Serve()
 		})
 
 		log.Debug("building provider store from config")
-		providers, err = config.ToProviderStore(userConfig.Providers, providers)
+		providers, err = config.GetProviderStore(confB.V, providers)
 		if err != nil {
 			log.Fatalf("building providers: %v", err)
 		}
 
-		log.Debug("building anchors from config")
-		members, err := config.AnchorsToMembers(userConfig.Anchors, providers.Fetch)
+		log.Debug("building members from config")
+		members, err := config.GetMembersWithProviderStore(confB.V, providers)
 		if err != nil {
-			log.Fatalf("building providers: %v", err)
+			log.Fatalf("building members: %v", err)
 		}
 
 		manager := conductor.NewConductor()
@@ -104,4 +117,9 @@ func Run(cmd *cobra.Command, args []string) {
 	if apiServ != nil {
 		apiServ.Stop()
 	}
+}
+
+func registerConfigFlags(flags *pflag.FlagSet, v *viper.Viper) {
+	v.BindPFlag(config.LogJSON, flags.Lookup(flagLogJSON))
+	v.BindPFlag(config.LogLevel, flags.Lookup(flagLogLevel))
 }

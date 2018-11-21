@@ -14,7 +14,7 @@ type fileWrapper struct {
 
 type TemplateFile struct {
 	Loader TemplateLoader
-	dest   *fileWrapper
+	Dest   *fileWrapper
 }
 
 func (t *fileWrapper) Close() error {
@@ -32,14 +32,14 @@ func (t *fileWrapper) Close() error {
 func NewTemplateFile(loader TemplateLoader, dest file.File) *TemplateFile {
 	return &TemplateFile{
 		Loader: loader,
-		dest: &fileWrapper{
+		Dest: &fileWrapper{
 			Dest: dest,
 		},
 	}
 }
 
 func (t *TemplateFile) Send(res *provider.Response) error {
-	return NewTemplate(t.Loader, t.dest).Send(res)
+	return NewTemplate(t.Loader, t.Dest).Send(res)
 }
 
 func (t *fileWrapper) Write(p []byte) (n int, err error) {

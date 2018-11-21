@@ -4,15 +4,15 @@ import (
 	"net/http"
 )
 
-type ApiServer struct {
+type APIServer struct {
 	Mux    *http.ServeMux
-	server http.Server
+	Server http.Server
 }
 
-func NewApiServer(address string) *ApiServer {
-	return &ApiServer{
+func NewAPIServer(address string) *APIServer {
+	return &APIServer{
 		Mux: http.NewServeMux(),
-		server: http.Server{
+		Server: http.Server{
 			Addr: address,
 		},
 	}
