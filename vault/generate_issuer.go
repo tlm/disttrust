@@ -16,8 +16,8 @@ const (
 	KeyIPSans     = "ip_sans"
 )
 
-func GenerateIssuer(path, role string, writer Writer) Issuer {
-	return IssuerFunc(func(r *provider.Request) (provider.Lease, error) {
+func GenerateIssuer(path, role string) Issuer {
+	return IssuerFunc(func(r *provider.Request, w Writer) (provider.Lease, error) {
 		dest := fmt.Sprintf("%s/issue/%s", path, role)
 
 		data := map[string]interface{}{}
@@ -27,7 +27,7 @@ func GenerateIssuer(path, role string, writer Writer) Issuer {
 		data[KeyCommonName] = r.CommonName
 		data[KeyFormat] = "pem"
 
-		secret, err := writer.Write(dest, data)
+		secret, err := w.Write(dest, data)
 		if err != nil {
 			return nil, errors.Wrap(err, "generating certificate from vault")
 		}

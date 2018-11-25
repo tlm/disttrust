@@ -1,12 +1,14 @@
 package provider
 
 type AltNames struct {
-	EmailAddresses []string
 	DNSNames       []string
+	EmailAddresses []string
 	IPAddresses    []string
 }
 
 type Request struct {
-	CommonName string
-	AltNames   AltNames
+	AltNames           AltNames
+	CommonName         string
+	Organization       []string
+	OrganizationalUnit []string
 }

@@ -33,8 +33,8 @@ func TestGenerateIssuerReq(t *testing.T) {
 		}, nil
 	}
 
-	issuer := GenerateIssuer("path", "role", WriterFunc(w))
-	_, err := issuer.Issue(&req)
+	issuer := GenerateIssuer("path", "role")
+	_, err := issuer.Issue(&req, WriterFunc(w))
 	if err != nil {
 		t.Fatalf("unexpected error calling generate issuer: %v", err)
 	}

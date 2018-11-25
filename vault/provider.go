@@ -12,10 +12,6 @@ import (
 
 type Config struct {
 	Address string
-	MakeCSR bool
-	Path    string
-	Role    string
-	RollKey bool
 }
 
 type Provider struct {
@@ -72,10 +68,10 @@ func (p *Provider) Issue(req *provider.Request) (provider.Lease, error) {
 	default:
 	}
 
-	return p.issuer.Issue(req)
+	return p.issuer.Issue(req, p.client.Logical())
 }
 
-func NewProvider(config Config, auth AuthHandler) (*Provider, error) {
+func NewProvider(config Config, issuer Issuer, auth AuthHandler) (*Provider, error) {
 	vconfig := api.DefaultConfig()
 	vconfig.Address = config.Address
 
@@ -83,8 +79,6 @@ func NewProvider(config Config, auth AuthHandler) (*Provider, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "vault provider creation")
 	}
-
-	issuer := GenerateIssuer(config.Path, config.Role, client.Logical())
 
 	nprv := Provider{
 		auth:       auth,

@@ -8,12 +8,16 @@ import (
 	_ "github.com/spf13/viper"
 
 	"github.com/tlmiller/disttrust/provider"
+	"github.com/tlmiller/disttrust/request"
+	"github.com/tlmiller/disttrust/util"
 	"github.com/tlmiller/disttrust/vault"
 )
 
 type RequestConfig struct {
-	CSR     bool
-	RollKey bool
+	CSR        bool
+	KeyType    string
+	RSABits    int
+	ECDSACurve string
 }
 
 type VaultConfig struct {
@@ -25,12 +29,27 @@ type VaultConfig struct {
 	Role       string
 }
 
+const (
+	RSAKeyType = "rsa"
+)
+
+var (
+	DefaultRequestConfig = RequestConfig{
+		CSR:        false,
+		KeyType:    "rsa",
+		RSABits:    2048,
+		ECDSACurve: "p246",
+	}
+)
+
+var (
+	SupportedCurves   = []string{"p224", "p256", "p384", "p521"}
+	SupportedKeyTypes = []string{"rsa", "ecdsa"}
+)
+
 func New() interface{} {
 	return &VaultConfig{
-		Request: RequestConfig{
-			CSR:     false,
-			RollKey: false,
-		},
+		Request: DefaultRequestConfig,
 	}
 }
 
@@ -38,6 +57,33 @@ func Mapper(v interface{}) (provider.Provider, error) {
 	conf, ok := v.(*VaultConfig)
 	if !ok {
 		return nil, errors.New("parsing vault provider config")
+	}
+
+	if conf.Path == "" {
+		return nil, errors.New("no vault pki path specificed")
+	}
+
+	if conf.Role == "" {
+		return nil, errors.New("no vault pki role for path specified")
+	}
+
+	var issuer vault.Issuer
+	if conf.Request.CSR {
+		if !util.StringInSlice(conf.Request.KeyType, SupportedKeyTypes) {
+			return nil, fmt.Errorf(
+				"request key type must be one of %v for vault csr requests",
+				SupportedKeyTypes)
+		}
+
+		var keyMaker request.KeyMaker
+		if conf.Request.KeyType == RSAKeyType {
+			keyMaker = request.NewRSAKeyMaker(conf.Request.RSABits)
+		}
+
+		requester := request.NewCSRRequester(keyMaker)
+		issuer = vault.CSRVerbatimIssuer(conf.Path, conf.Role, requester)
+	} else {
+		issuer = vault.GenerateIssuer(conf.Path, conf.Role)
 	}
 
 	authMaker, exists := vault.AuthHandlers[conf.AuthMethod]
@@ -52,16 +98,7 @@ func Mapper(v interface{}) (provider.Provider, error) {
 	pconfig := vault.Config{}
 	pconfig.Address = conf.Address
 
-	if conf.Path == "" {
-		return nil, errors.New("no vault pki path specificed")
-	}
-	pconfig.Path = conf.Path
-	if conf.Role == "" {
-		return nil, errors.New("no vault pki role for path specified")
-	}
-	pconfig.Role = conf.Role
-
-	provider, err := vault.NewProvider(pconfig, auth)
+	provider, err := vault.NewProvider(pconfig, issuer, auth)
 	if err != nil {
 		return nil, errors.Wrap(err, "building vault provider from config")
 	}

@@ -19,14 +19,16 @@ type AltNamesConfig struct {
 }
 
 type AnchorConfig struct {
-	Action     ActionConfig
-	AltNames   AltNamesConfig
-	CommonName string
-	CN         string
-	Dest       string
-	DestOpts   map[string]interface{}
-	Name       string
-	Provider   string
+	Action             ActionConfig
+	AltNames           AltNamesConfig
+	CommonName         string
+	CN                 string
+	Dest               string
+	DestOpts           map[string]interface{}
+	Name               string
+	Organization       []string
+	OrganizationalUnit []string
+	Provider           string
 }
 
 type ProviderFetcher func(string) (provider.Provider, bool)
@@ -56,6 +58,8 @@ func GetMembers(v *viper.Viper, pFetcher ProviderFetcher) ([]conductor.Member, e
 				DNSNames:    anchor.AltNames.DNSNames,
 				IPAddresses: anchor.AltNames.IPAddresses,
 			},
+			Organization:       anchor.Organization,
+			OrganizationalUnit: anchor.OrganizationalUnit,
 		}
 
 		if anchor.CN != "" {
