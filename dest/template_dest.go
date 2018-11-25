@@ -30,7 +30,7 @@ type TemplateString string
 
 type Template struct {
 	Loader TemplateLoader
-	Dest   io.WriteCloser
+	Dest   io.Writer
 }
 
 func (f TemplateLoaderFunc) Load() (string, error) {
@@ -41,7 +41,7 @@ func (s TemplateString) Load() (string, error) {
 	return string(s), nil
 }
 
-func NewTemplate(loader TemplateLoader, dest io.WriteCloser) *Template {
+func NewTemplate(loader TemplateLoader, dest io.Writer) *Template {
 	return &Template{
 		Loader: loader,
 		Dest:   dest,
@@ -49,7 +49,6 @@ func NewTemplate(loader TemplateLoader, dest io.WriteCloser) *Template {
 }
 
 func (t *Template) Send(res *provider.Response) error {
-	defer t.Dest.Close()
 	tmplBody, err := t.Loader.Load()
 	if err != nil {
 		return errors.Wrap(err, "loading template")

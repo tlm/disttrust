@@ -2,14 +2,18 @@ package dest
 
 import (
 	"os"
+	"strings"
+
+	"github.com/pkg/errors"
 
 	"github.com/tlmiller/disttrust/file"
 	"github.com/tlmiller/disttrust/provider"
 )
 
 type fileWrapper struct {
-	Dest  file.File
-	ofile *os.File
+	Dest     file.File
+	origPath string
+	ofile    *os.File
 }
 
 type TemplateFile struct {
@@ -33,12 +37,19 @@ func NewTemplateFile(loader TemplateLoader, dest file.File) *TemplateFile {
 	return &TemplateFile{
 		Loader: loader,
 		Dest: &fileWrapper{
-			Dest: dest,
+			Dest:     dest,
+			origPath: dest.Path,
 		},
 	}
 }
 
 func (t *TemplateFile) Send(res *provider.Response) error {
+	defer t.Dest.Close()
+	tmplPath := strings.Builder{}
+	if err := NewTemplate(TemplateString(t.Dest.origPath), &tmplPath).Send(res); err != nil {
+		return errors.Wrapf(err, "parsing possible template dest path %s", t.Dest.origPath)
+	}
+	t.Dest.Dest.Path = tmplPath.String()
 	return NewTemplate(t.Loader, t.Dest).Send(res)
 }
 
