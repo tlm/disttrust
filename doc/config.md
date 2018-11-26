@@ -23,7 +23,7 @@ an object. Each supported key in the object is defined below.
 providers:
 - id: vault
   name: example-provider
-  options: [] # provider specific options. In this case they would be vault options
+  options: {} # provider specific options. In this case they would be vault options
 ```
 
 `id` - required
