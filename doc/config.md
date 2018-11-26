@@ -1,10 +1,10 @@
-#Configuration
+# Configuration
 
 disttrust is configured by supplying one or more json/yaml files in the command
 line args and also the inclusion of a directory where all yaml/json files will
 be processed.
 
-#Hierarchy
+# Hierarchy
 
 All config files have the following hierachy that can be merged from multiple
 sources.
