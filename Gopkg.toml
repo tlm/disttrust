@@ -25,14 +25,11 @@
 #   unused-packages = true
 
 
-[[constraint]]
-  name = "github.com/pkg/errors"
-  version = "0.8.0"
-
 [prune]
   go-tests = true
   unused-packages = true
 
-[[constraint]]
-  branch = "master"
-  name = "github.com/carlescere/goback"
+[[override]]
+	name = "github.com/spf13/viper"
+	branch = "feature/merge-slices"
+	source = "github.com/tlmiller/viper"
