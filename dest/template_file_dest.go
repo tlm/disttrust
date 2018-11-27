@@ -27,9 +27,11 @@ func (t *fileWrapper) Close() error {
 	}
 	err := t.ofile.Close()
 	if err != nil {
+		t.ofile = nil
 		return err
 	}
 	err = t.Dest.Chown()
+	t.ofile = nil
 	return err
 }
 
