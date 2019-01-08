@@ -11,6 +11,10 @@ type File struct {
 	CAFileMode         string
 	CAFileGid          string
 	CAFileUid          string
+	CABundleFile       string
+	CABundleFileMode   string
+	CABundleFileGid    string
+	CABundleFileUid    string
 	CertFile           string
 	CertFileMode       string
 	CertFileGid        string
@@ -39,6 +43,15 @@ func FileMapper(v interface{}) (dest.Dest, error) {
 			return nil, errors.Wrap(err, "caFile")
 		}
 		fileDests = append(fileDests, dest.NewTemplateFile(dest.CAFile, caFile))
+	}
+	if conf.CABundleFile != "" {
+		caBundleFile, err := DestFileBuilder(conf.CABundleFile,
+			conf.CABundleFileMode, conf.CABundleFileGid, conf.CABundleFileUid)
+		if err != nil {
+			return nil, errors.Wrap(err, "caBundleFile")
+		}
+		fileDests = append(fileDests, dest.NewTemplateFile(dest.CABundleFile,
+			caBundleFile))
 	}
 	if conf.CertFile != "" {
 		certFile, err := DestFileBuilder(conf.CertFile, conf.CertFileMode,

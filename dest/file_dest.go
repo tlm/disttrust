@@ -3,6 +3,7 @@ package dest
 type FileDestType string
 
 var (
+	CABundleFile          FileDestType = "{{ .CABundle }}"
 	CAFile                FileDestType = "{{ .CA }}"
 	CertificateFile       FileDestType = "{{ .Certificate }}"
 	CertificateBundleFile FileDestType = "{{ .Certificate }}\n{{ .CABundle }}"
