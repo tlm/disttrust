@@ -4,20 +4,18 @@ import (
 	"fmt"
 )
 
-type Store struct {
-	providers map[string]Provider
-}
+type Store map[string]Provider
 
 var (
-	defaultStore *Store
+	defaultStore Store
 )
 
-func DefaultStore() *Store {
+func DefaultStore() Store {
 	return defaultStore
 }
 
-func (s *Store) Fetch(name string) (Provider, bool) {
-	if p, exists := s.providers[name]; exists {
+func (s Store) Fetch(name string) (Provider, bool) {
+	if p, exists := s[name]; exists {
 		return p, true
 	}
 	return nil, false
@@ -27,21 +25,19 @@ func init() {
 	defaultStore = NewStore()
 }
 
-func NewStore() *Store {
-	return &Store{
-		providers: make(map[string]Provider),
-	}
+func NewStore() Store {
+	return Store{}
 }
 
-func (s *Store) Remove(name string) {
-	delete(s.providers, name)
+func (s Store) Remove(name string) {
+	delete(s, name)
 }
 
-func (s *Store) Store(name string, p Provider) error {
-	if _, exists := s.providers[name]; exists {
+func (s Store) Store(name string, p Provider) error {
+	if _, exists := s[name]; exists {
 		return fmt.Errorf("provider for name '%s' already exists", name)
 	}
 
-	s.providers[name] = p
+	s[name] = p
 	return nil
 }

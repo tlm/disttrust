@@ -14,7 +14,7 @@ func TestGetProviderCalls(t *testing.T) {
 
 	mapping := ProviderMapping{
 		Config: func() interface{} { return &struct{}{} },
-		Mapper: func(_ interface{}) (provider.Provider, error) {
+		Mapper: func(_ string, _ interface{}) (provider.Provider, error) {
 			called = true
 			return nil, nil
 		},
@@ -46,7 +46,7 @@ func TestGetProviderReuse(t *testing.T) {
 	pf := ProviderFactory{}
 	mapping := ProviderMapping{
 		Config: func() interface{} { return &struct{}{} },
-		Mapper: func(_ interface{}) (provider.Provider, error) {
+		Mapper: func(_ string, _ interface{}) (provider.Provider, error) {
 			called = true
 			return nil, nil
 		},
@@ -96,7 +96,7 @@ func TestGetProviderDoesNotReuse(t *testing.T) {
 	pf := ProviderFactory{}
 	mapping := ProviderMapping{
 		Config: func() interface{} { return &struct{}{} },
-		Mapper: func(_ interface{}) (provider.Provider, error) {
+		Mapper: func(_ string, _ interface{}) (provider.Provider, error) {
 			called = true
 			return nil, nil
 		},

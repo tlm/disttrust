@@ -64,3 +64,17 @@ func New(path string) File {
 		Uid:  "",
 	}
 }
+
+func NewForAttributes(path, mode, gid, uid string) (File, error) {
+	f := New(path)
+	if mode != "" {
+		conv, err := strconv.ParseUint(mode, 8, 32)
+		if err != nil {
+			return f, errors.Wrap(err, "invalid mode uint")
+		}
+		f.Mode = os.FileMode(conv)
+	}
+	f.Gid = gid
+	f.Uid = uid
+	return f, nil
+}

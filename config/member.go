@@ -38,7 +38,7 @@ const (
 )
 
 func GetMembersWithProviderStore(v *viper.Viper,
-	store *provider.Store) ([]conductor.Member, error) {
+	store provider.Store) ([]conductor.Member, error) {
 	return GetMembers(v, ProviderFetcher(store.Fetch))
 }
 

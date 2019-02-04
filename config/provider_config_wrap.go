@@ -9,6 +9,14 @@ type ProviderConfigWrap struct {
 	P       provider.Provider
 }
 
+func (p *ProviderConfigWrap) Name() string {
+	return p.P.Name()
+}
+
+func (p *ProviderConfigWrap) Initialise() error {
+	return p.P.Initialise()
+}
+
 func (p *ProviderConfigWrap) Issue(r *provider.Request) (provider.Lease, error) {
 	return p.P.Issue(r)
 }

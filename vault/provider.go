@@ -10,16 +10,13 @@ import (
 	"github.com/tlmiller/disttrust/provider"
 )
 
-type Config struct {
-	Address string
-}
-
 type Provider struct {
 	auth       AuthHandler
+	authCache  AuthCache
 	authDoneCh chan error
 	client     *api.Client
-	config     Config
 	issuer     Issuer
+	name       string
 }
 
 const (
@@ -38,31 +35,73 @@ func (p *Provider) authRenewal(secret *api.Secret) {
 	// that means an error has occurred with renewal at which point this is
 	// considered a failure or a new token needs to be generated. If a new token
 	// generation also fails then nothing more we can do.
+finish:
 	for {
 		select {
 		case err := <-renewer.DoneCh():
 			if err != nil {
 				p.authDoneCh <- errors.Wrap(err, "auth renewal")
-				break
+				close(p.authDoneCh)
+				break finish
 			}
 			secret, err := p.auth.Auth(p.client)
 			if err != nil {
 				p.authDoneCh <- errors.Wrap(err, "making new auth token in auth renewal")
-				break
+				close(p.authDoneCh)
+				break finish
+			}
+
+			if err := p.authCache.Write(secret); err != nil {
+				p.authDoneCh <- errors.Wrap(err, "caching auth secret")
+				close(p.authDoneCh)
+				break finish
 			}
 			p.client.SetToken(secret.Auth.ClientToken)
 			go p.authRenewal(secret)
-			break
+			break finish
 		case renewal := <-renewer.RenewCh():
+			if err := p.authCache.Write(renewal.Secret); err != nil {
+				p.authDoneCh <- errors.Wrap(err, "caching auth secret")
+				close(p.authDoneCh)
+				break finish
+			}
 			p.client.SetToken(renewal.Secret.Auth.ClientToken)
 		}
 	}
 }
 
+func (p *Provider) Initialise() error {
+	tknSecret, err := p.authCache.Read()
+	if err != nil {
+		return errors.Wrap(err, "getting auth cache secret for init")
+	}
+
+	if tknSecret != nil {
+		_, err := TokenValid(p.client, tknSecret)
+		if err != nil {
+			tknSecret = nil
+		}
+	}
+
+	if tknSecret == nil {
+		tknSecret, err = p.auth.Auth(p.client)
+		if err != nil {
+			return errors.Wrap(err, "new vault provider auth")
+		}
+		if err := p.authCache.Write(tknSecret); err != nil {
+			return errors.Wrap(err, "caching auth secret for new provider")
+		}
+	}
+
+	p.client.SetToken(tknSecret.Auth.ClientToken)
+	go p.authRenewal(tknSecret)
+	return nil
+}
+
 func (p *Provider) Issue(req *provider.Request) (provider.Lease, error) {
 	select {
-	case err := <-p.authDoneCh:
-		if err != nil {
+	case err, ok := <-p.authDoneCh:
+		if err != nil || !ok {
 			return nil, err
 		}
 	default:
@@ -71,9 +110,14 @@ func (p *Provider) Issue(req *provider.Request) (provider.Lease, error) {
 	return p.issuer.Issue(req, p.client.Logical())
 }
 
-func NewProvider(config Config, issuer Issuer, auth AuthHandler) (*Provider, error) {
+func (p *Provider) Name() string {
+	return p.name
+}
+
+func NewProvider(name, address string, issuer Issuer, auth AuthHandler,
+	cache AuthCache) (*Provider, error) {
 	vconfig := api.DefaultConfig()
-	vconfig.Address = config.Address
+	vconfig.Address = address
 
 	client, err := api.NewClient(vconfig)
 	if err != nil {
@@ -82,26 +126,20 @@ func NewProvider(config Config, issuer Issuer, auth AuthHandler) (*Provider, err
 
 	nprv := Provider{
 		auth:       auth,
+		authCache:  cache,
 		authDoneCh: make(chan error),
 		client:     client,
-		config:     config,
 		issuer:     issuer,
+		name:       name,
 	}
-
-	tknSecret, err := nprv.auth.Auth(client)
-	if err != nil {
-		return nil, errors.Wrap(err, "new vault provider auth")
-	}
-	nprv.client.SetToken(tknSecret.Auth.ClientToken)
-	go nprv.authRenewal(tknSecret)
 
 	return &nprv, nil
 }
 
 func (p *Provider) Renew(lease provider.Lease) (provider.Lease, error) {
 	select {
-	case err := <-p.authDoneCh:
-		if err != nil {
+	case err, ok := <-p.authDoneCh:
+		if err != nil || !ok {
 			return nil, err
 		}
 	default:

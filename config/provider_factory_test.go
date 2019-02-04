@@ -9,7 +9,7 @@ import (
 func TestProviderFactoryAddDoubleMapping(t *testing.T) {
 	mapping := ProviderMapping{
 		Config: func() interface{} { return nil },
-		Mapper: func(_ interface{}) (provider.Provider, error) {
+		Mapper: func(_ string, _ interface{}) (provider.Provider, error) {
 			return nil, nil
 		},
 	}

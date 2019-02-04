@@ -7,13 +7,26 @@ import (
 )
 
 type dummyProvider struct {
-	IssueCalled bool
-	RenewCalled bool
+	InitialiseCalled bool
+	IssueCalled      bool
+	NameVal          string
+	NameCalled       bool
+	RenewCalled      bool
+}
+
+func (d *dummyProvider) Initialise() error {
+	d.InitialiseCalled = true
+	return nil
 }
 
 func (d *dummyProvider) Issue(_ *provider.Request) (provider.Lease, error) {
 	d.IssueCalled = true
 	return nil, nil
+}
+
+func (d *dummyProvider) Name() string {
+	d.NameCalled = true
+	return d.NameVal
 }
 
 func (d *dummyProvider) Renew(_ provider.Lease) (provider.Lease, error) {
@@ -23,22 +36,34 @@ func (d *dummyProvider) Renew(_ provider.Lease) (provider.Lease, error) {
 
 func TestProviderConfigWrapPassThrough(t *testing.T) {
 	p := &dummyProvider{
-		IssueCalled: false,
-		RenewCalled: false,
+		NameVal: "test",
 	}
 
 	pcw := &ProviderConfigWrap{
 		P: p,
 	}
 
+	pcw.Initialise()
 	pcw.Issue(nil)
 	pcw.Renew(nil)
 
+	if pcw.Name() != "test" {
+		t.Error("ProviderConfigWrap return val for Name() was not expected")
+	}
+
+	if !p.InitialiseCalled {
+		t.Error("ProviderConfigWrap did not pass initialise call through")
+	}
+
 	if !p.IssueCalled {
-		t.Fatal("ProviderConfigWrap did not pass issue call through")
+		t.Error("ProviderConfigWrap did not pass issue call through")
+	}
+
+	if !p.NameCalled {
+		t.Error("ProviderConfigWrap did not pass name call through")
 	}
 
 	if !p.RenewCalled {
-		t.Fatal("ProviderConfigWrap did not pass renew call through")
+		t.Error("ProviderConfigWrap did not pass renew call through")
 	}
 }

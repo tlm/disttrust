@@ -7,11 +7,19 @@ import (
 
 	_ "github.com/spf13/viper"
 
+	"github.com/tlmiller/disttrust/file"
 	"github.com/tlmiller/disttrust/provider"
 	"github.com/tlmiller/disttrust/request"
 	"github.com/tlmiller/disttrust/util"
 	"github.com/tlmiller/disttrust/vault"
 )
+
+type AuthCache struct {
+	Gid  string
+	Mode string
+	Path string
+	Uid  string
+}
 
 type RequestConfig struct {
 	CSR        bool
@@ -22,11 +30,13 @@ type RequestConfig struct {
 
 type VaultConfig struct {
 	Address    string
+	AuthCache  AuthCache
 	AuthMethod string
 	AuthOpts   map[string]string
 	Path       string
 	Request    RequestConfig
 	Role       string
+	TokenFile  string
 }
 
 const (
@@ -43,17 +53,21 @@ var (
 )
 
 var (
-	SupportedCurves   = []string{"p224", "p256", "p384", "p521"}
-	SupportedKeyTypes = []string{"rsa", "ecdsa"}
+	DefaultAuthCacheMode = "0600"
+	SupportedCurves      = []string{"p224", "p256", "p384", "p521"}
+	SupportedKeyTypes    = []string{"rsa", "ecdsa"}
 )
 
 func New() interface{} {
 	return &VaultConfig{
+		AuthCache: AuthCache{
+			Mode: DefaultAuthCacheMode,
+		},
 		Request: DefaultRequestConfig,
 	}
 }
 
-func Mapper(v interface{}) (provider.Provider, error) {
+func Mapper(name string, v interface{}) (provider.Provider, error) {
 	conf, ok := v.(*VaultConfig)
 	if !ok {
 		return nil, errors.New("parsing vault provider config")
@@ -95,10 +109,18 @@ func Mapper(v interface{}) (provider.Provider, error) {
 		return nil, errors.Wrap(err, "making auth handler")
 	}
 
-	pconfig := vault.Config{}
-	pconfig.Address = conf.Address
+	var authCache vault.AuthCache = &vault.EmptyAuthCache{}
+	if conf.AuthCache.Path != "" {
+		cacheFile, err := file.NewForAttributes(conf.AuthCache.Path,
+			conf.AuthCache.Mode, conf.AuthCache.Gid, conf.AuthCache.Gid)
+		if err != nil {
+			return nil, errors.Wrap(err, "making auth cache file")
+		}
 
-	provider, err := vault.NewProvider(pconfig, issuer, auth)
+		authCache = vault.NewFileAuthCache(cacheFile)
+	}
+
+	provider, err := vault.NewProvider(name, conf.Address, issuer, auth, authCache)
 	if err != nil {
 		return nil, errors.Wrap(err, "building vault provider from config")
 	}

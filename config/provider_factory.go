@@ -13,7 +13,7 @@ import (
 
 type ProviderConfig func() interface{}
 
-type ProviderMapper func(val interface{}) (provider.Provider, error)
+type ProviderMapper func(name string, val interface{}) (provider.Provider, error)
 
 type ProviderMapping struct {
 	Config ProviderConfig
@@ -45,11 +45,11 @@ func init() {
 	}
 }
 
-func (p ProviderMapping) MakeProvider(options map[string]interface{}) (
+func (p ProviderMapping) MakeProvider(name string, options map[string]interface{}) (
 	provider.Provider, error) {
 	conf := p.Config()
 	if err := mapstructure.Decode(options, conf); err != nil {
 		return nil, errors.Wrap(err, "making provider mapping config from options")
 	}
-	return p.Mapper(conf)
+	return p.Mapper(name, conf)
 }

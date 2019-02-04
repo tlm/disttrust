@@ -89,6 +89,17 @@ func Run(cmd *cobra.Command, args []string) {
 			log.Fatalf("building providers: %v", err)
 		}
 
+		log.Debug("initialising providers")
+		for _, provider := range providers {
+			log := log.WithFields(log.Fields{
+				"provider_name": provider.Name(),
+			})
+			log.Info("initialising provider")
+			if err := provider.Initialise(); err != nil {
+				log.Fatalf("initialising provider: %v", err)
+			}
+		}
+
 		log.Debug("building members from config")
 		members, err := config.GetMembersWithProviderStore(confB.V, providers)
 		if err != nil {

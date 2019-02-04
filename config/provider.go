@@ -22,12 +22,12 @@ const (
 )
 
 func GetProviderStore(v *viper.Viper,
-	s *provider.Store) (*provider.Store, error) {
+	s provider.Store) (provider.Store, error) {
 	return GetProviderStoreWithFactory(v, s, DefaultProviderFactory)
 }
 
-func GetProviderStoreWithFactory(v *viper.Viper, store *provider.Store,
-	factory ProviderFactory) (*provider.Store, error) {
+func GetProviderStoreWithFactory(v *viper.Viper, store provider.Store,
+	factory ProviderFactory) (provider.Store, error) {
 	nstore := provider.NewStore()
 	providers := []providerConf{}
 	err := v.UnmarshalKey(Providers, &providers)
@@ -59,7 +59,7 @@ func GetProviderStoreWithFactory(v *viper.Viper, store *provider.Store,
 
 		if changed {
 			var err error
-			genP, err = mapper.MakeProvider(p.Options)
+			genP, err = mapper.MakeProvider(p.Name, p.Options)
 			if err != nil {
 				return nstore, errors.Wrapf(err, "getting provider for %s", p.Name)
 			}
